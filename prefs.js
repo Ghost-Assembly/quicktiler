@@ -12,17 +12,10 @@ import {
     gettext as _,
 } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
-const KEYBINDINGS = [
-    ['tile-left', () => _('Tile left')],
-    ['tile-right', () => _('Tile right')],
-    ['tile-center', () => _('Tile centre')],
-    ['tile-maximize', () => _('Maximize')],
-    ['focus-left', () => _('Focus left')],
-    ['focus-right', () => _('Focus right')],
-    ['swap-left', () => _('Swap left')],
-    ['swap-right', () => _('Swap right')],
-    ['move-monitor-next', () => _('Move to next monitor')],
-];
+// modules/actions.js imports nothing, so it is safe to pull into this process,
+// which has no access to gnome-shell's resource:// modules. Sharing it is what
+// stops the action list here from drifting away from the one tiler.js binds.
+import { ACTIONS } from './modules/actions.js';
 
 /**
  * Whether a captured key combination is usable as a global shortcut.
@@ -151,8 +144,11 @@ export default class TilerPreferences extends ExtensionPreferences {
                 'Press a direction repeatedly to cycle through that side’s zones.',
             ),
         });
-        for (const [key, title] of KEYBINDINGS)
-            shortcuts.add(new ShortcutRow(settings, key, title()));
+        // _() is called here rather than in modules/actions.js, which must stay
+        // free of imports, and at row-build time rather than at module load so
+        // the gettext domain is already bound.
+        for (const { key, label } of ACTIONS)
+            shortcuts.add(new ShortcutRow(settings, key, _(label)));
         page.add(shortcuts);
 
         window.add(page);

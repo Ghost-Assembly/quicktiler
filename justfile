@@ -50,8 +50,9 @@ security:
     actionlint
     zizmor .github/workflows/
 
-# Produce the installable zip
-build: lint
+# Produce the installable zip. `ci` runs lint before this; a standalone
+# `just build` deliberately does not, so it stays quick to iterate with.
+build:
     rm -f {{ uuid }}.shell-extension.zip
     zip -qr {{ uuid }}.shell-extension.zip {{ src }} -x 'schemas/gschemas.compiled'
     @echo "built {{ uuid }}.shell-extension.zip"

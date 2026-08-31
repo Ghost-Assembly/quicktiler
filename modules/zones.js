@@ -96,6 +96,18 @@ export function projectZone(zone, workArea, gap = 0) {
 }
 
 /**
+ * How far a window's frame may deviate from a zone, per edge, and still be
+ * counted as occupying it.
+ *
+ * Applications do not always take the size they are given: terminals snap to
+ * whole character cells, and some clients enforce size increments or minimum
+ * sizes.
+ *
+ * @type {number}
+ */
+export const MATCH_TOLERANCE = 8;
+
+/**
  * Identify which zone a window currently occupies.
  *
  * This is what makes Tiler stateless: the current zone is read back from the
@@ -103,17 +115,14 @@ export function projectZone(zone, workArea, gap = 0) {
  * were placed by something else, and there is no per-window table to leak or go
  * stale.
  *
- * The tolerance exists because applications do not always take the size they
- * are given — terminals snap to whole character cells, and some clients enforce
- * size increments or minimum sizes.
- *
  * @param {{x: number, y: number, width: number, height: number}} rect Window frame rectangle.
  * @param {{x: number, y: number, width: number, height: number}} workArea Monitor work area.
  * @param {number} [gap] The gap the zones were projected with.
- * @param {number} [tolerance] Maximum per-edge deviation, in pixels.
+ * @param {number} [tolerance] Maximum per-edge deviation, in pixels. See
+ *   {@link MATCH_TOLERANCE}.
  * @returns {string|null} Zone id, or null if the window is in no zone.
  */
-export function matchZone(rect, workArea, gap = 0, tolerance = 8) {
+export function matchZone(rect, workArea, gap = 0, tolerance = MATCH_TOLERANCE) {
     let best = null;
     let bestDistance = Infinity;
 

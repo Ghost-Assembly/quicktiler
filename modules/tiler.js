@@ -14,13 +14,15 @@ import Shell from 'gi://Shell';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
+import { ACTIONS } from './actions.js';
 import { isFocusable, isPlaceable } from './windows.js';
-import { matchZone, nextZone, projectZone, zoneById } from './zones.js';
-
-// Applications do not always take the size they are given; terminals in
-// particular snap to whole character cells. Allow a few pixels of drift when
-// deciding which zone a window is already in.
-const MATCH_TOLERANCE = 8;
+import {
+    MATCH_TOLERANCE,
+    matchZone,
+    nextZone,
+    projectZone,
+    zoneById,
+} from './zones.js';
 
 /**
  * Read the facts modules/windows.js needs off a Meta.Window.
@@ -90,15 +92,35 @@ export class Tiler {
             this._bindings.push(key);
         };
 
-        bind('tile-left', () => this._tile('left'));
-        bind('tile-right', () => this._tile('right'));
-        bind('tile-center', () => this._tile('center'));
-        bind('tile-maximize', () => this._toggleMaximize());
-        bind('focus-left', () => this._focusNeighbour(-1));
-        bind('focus-right', () => this._focusNeighbour(1));
-        bind('swap-left', () => this._swapNeighbour(-1));
-        bind('swap-right', () => this._swapNeighbour(1));
-        bind('move-monitor-next', () => this._moveToNextMonitor());
+        // Keyed by the same strings modules/actions.js and the gschema use, and
+        // driven from that list rather than from a second one written out here.
+        // A Map rather than an object literal for the reason given in
+        // modules/zones.js: a bare index resolves inherited keys.
+        const handlers = new Map([
+            ['tile-left', () => this._tile('left')],
+            ['tile-right', () => this._tile('right')],
+            ['tile-center', () => this._tile('center')],
+            ['tile-maximize', () => this._toggleMaximize()],
+            ['focus-left', () => this._focusNeighbour(-1)],
+            ['focus-right', () => this._focusNeighbour(1)],
+            ['swap-left', () => this._swapNeighbour(-1)],
+            ['swap-right', () => this._swapNeighbour(1)],
+            ['move-monitor-next', () => this._moveToNextMonitor()],
+        ]);
+
+        for (const { key } of ACTIONS) {
+            const handler = handlers.get(key);
+
+            // tests/actions.test.js keeps ACTIONS and the gschema in step, but
+            // nothing off-Shell can check this map, so say so loudly rather than
+            // leaving a shortcut that is configurable and silently inert.
+            if (!handler) {
+                console.warn(`[tiler] no handler for action ${key}`);
+                continue;
+            }
+
+            bind(key, handler);
+        }
     }
 
     /**
@@ -119,23 +141,14 @@ export class Tiler {
     }
 
     /**
-     * The focused window, if it is safe to place.
+     * The focused window, if it satisfies a policy.
      *
-     * @returns {Meta.Window|null} Target window.
+     * @param {Function} accepts Predicate from modules/windows.js.
+     * @returns {Meta.Window|null} The focused window, or null.
      */
-    _target() {
+    _focused(accepts) {
         const window = global.display.get_focus_window();
-        return isPlaceable(describe(window)) ? window : null;
-    }
-
-    /**
-     * The focused window, if focus may be moved away from it.
-     *
-     * @returns {Meta.Window|null} Focus-navigation origin.
-     */
-    _focusOrigin() {
-        const window = global.display.get_focus_window();
-        return isFocusable(describe(window)) ? window : null;
+        return accepts(describe(window)) ? window : null;
     }
 
     /**
@@ -161,12 +174,12 @@ export class Tiler {
      * Which zone a window currently occupies, read back from its geometry.
      *
      * @param {Meta.Window} window Window to inspect.
+     * @param {{x: number, y: number, width: number, height: number}} workArea
+     *   Work area to measure against, passed in so that a caller which also
+     *   places the window does not read it from Mutter twice.
      * @returns {string|null} Zone id, or null if it is in none.
      */
-    _currentZone(window) {
-        const workArea = this._workArea(window);
-        if (!workArea) return null;
-
+    _currentZone(window, workArea) {
         return matchZone(window.get_frame_rect(), workArea, this._gap, MATCH_TOLERANCE);
     }
 
@@ -206,13 +219,14 @@ export class Tiler {
      *
      * @param {Meta.Window} window Window to place.
      * @param {string|null} zoneId Zone id.
+     * @param {{x: number, y: number, width: number, height: number}} workArea
+     *   Work area to project onto. Passed in rather than read here so that it
+     *   can be the destination monitor's, which is what makes moving a window
+     *   between monitors keep its zone.
      */
-    _place(window, zoneId) {
+    _place(window, zoneId, workArea) {
         const zone = zoneById(zoneId);
         if (!zone) return;
-
-        const workArea = this._workArea(window);
-        if (!workArea) return;
 
         this._moveResize(window, projectZone(zone, workArea, this._gap));
     }
@@ -223,10 +237,17 @@ export class Tiler {
      * @param {string} group Cycle to walk: 'left', 'right' or 'center'.
      */
     _tile(group) {
-        const window = this._target();
+        const window = this._focused(isPlaceable);
         if (!window) return;
 
-        this._place(window, nextZone(this._currentZone(window), group));
+        const workArea = this._workArea(window);
+        if (!workArea) return;
+
+        this._place(
+            window,
+            nextZone(this._currentZone(window, workArea), group),
+            workArea,
+        );
     }
 
     /**
@@ -238,7 +259,7 @@ export class Tiler {
      * setting, which is what maximizing is supposed to mean.
      */
     _toggleMaximize() {
-        const window = this._target();
+        const window = this._focused(isPlaceable);
         if (!window) return;
 
         // The conjunction, where _unmaximize uses the disjunction: a window
@@ -294,7 +315,7 @@ export class Tiler {
      * @param {number} direction -1 for left, 1 for right.
      */
     _focusNeighbour(direction) {
-        const window = this._focusOrigin();
+        const window = this._focused(isFocusable);
         if (!window) return;
 
         const neighbour = this._neighbour(window, direction, isFocusable);
@@ -307,7 +328,7 @@ export class Tiler {
      * @param {number} direction -1 for left, 1 for right.
      */
     _swapNeighbour(direction) {
-        const window = this._target();
+        const window = this._focused(isPlaceable);
         if (!window) return;
 
         const neighbour = this._neighbour(window, direction, isPlaceable);
@@ -331,7 +352,7 @@ export class Tiler {
 
     /** Move the focused window to the next monitor, keeping its zone. */
     _moveToNextMonitor() {
-        const window = this._target();
+        const window = this._focused(isPlaceable);
         if (!window) return;
 
         const count = Main.layoutManager.monitors.length;
@@ -339,7 +360,10 @@ export class Tiler {
 
         // Read the zone before the move: afterwards the window is measured
         // against a different work area and would no longer match.
-        const zoneId = this._currentZone(window);
+        const source = this._workArea(window);
+        if (!source) return;
+
+        const zoneId = this._currentZone(window, source);
         const target = (window.get_monitor() + 1) % count;
 
         window.move_to_monitor(target);
@@ -348,12 +372,9 @@ export class Tiler {
         // get_monitor() here would depend on Mutter having already applied the
         // move, and a stale read would snap the window back to where it came
         // from.
-        const zone = zoneById(zoneId);
-        if (!zone) return;
+        const destination = this._workArea(window, target);
+        if (!destination) return;
 
-        const workArea = this._workArea(window, target);
-        if (!workArea) return;
-
-        this._moveResize(window, projectZone(zone, workArea, this._gap));
+        this._place(window, zoneId, destination);
     }
 }

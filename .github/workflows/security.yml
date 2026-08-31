@@ -4,6 +4,7 @@ on:
     push:
         branches: [main]
     pull_request:
+    workflow_dispatch:
     schedule:
         # Weekly, so new advisories are caught without needing a code change.
         - cron: '17 5 * * 1'
@@ -38,6 +39,12 @@ jobs:
 
     scanners:
         name: Scanners
+        # ci.yml runs `just ci`, which already includes `just security`, on every
+        # push and pull request. Running it again here would scan the same tree
+        # twice. What this job adds is the weekly schedule: the same scanners
+        # against unchanged code, catching advisories published since the last
+        # commit.
+        if: github.event_name != 'push' && github.event_name != 'pull_request'
         runs-on: ubuntu-latest
         timeout-minutes: 15
         steps:
