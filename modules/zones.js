@@ -148,7 +148,7 @@ export function matchZone(rect, workArea, gap = 0, tolerance = 8) {
  * anywhere else — including untiled — enters at the head of the cycle.
  *
  * @param {string|null} currentId Zone the window occupies now, or null.
- * @param {string} group Cycle to walk: 'left', 'right', 'center' or 'full'.
+ * @param {string} group Cycle to walk: 'left', 'right' or 'center'.
  * @returns {string|null} Zone id to move to, or null for an unknown group.
  */
 export function nextZone(currentId, group) {

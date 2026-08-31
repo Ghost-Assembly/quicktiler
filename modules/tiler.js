@@ -4,8 +4,10 @@
 // the Shell. That is why it is kept thin and free of branching logic: geometry
 // and cycling live in modules/zones.js, and the rules about which windows may
 // be touched live in modules/windows.js. Both are pure and covered by Vitest.
-// What is left here — reading facts off Mutter and calling it — is exercised by
-// scripts/headless-check.sh.
+//
+// scripts/headless-check.sh checks that what is left enables, disables and
+// re-enables without leaking. It presses no keys and asserts no geometry, so it
+// is a lifetime check, not evidence that a placement is correct.
 
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';

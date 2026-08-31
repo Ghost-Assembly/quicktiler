@@ -31,15 +31,15 @@ and there is no state to go stale.
 Every default was checked against the shortcuts GNOME 50 binds out of the box,
 so none of them collide and you do not have to unbind anything.
 
-| Action               | Default                                                       |
-| -------------------- | ------------------------------------------------------------- |
-| Tile left            | <kbd>Super</kbd>+<kbd>Ctrl</kbd>+<kbd>←</kbd>                 |
-| Tile right           | <kbd>Super</kbd>+<kbd>Ctrl</kbd>+<kbd>→</kbd>                 |
-| Tile centre          | <kbd>Super</kbd>+<kbd>Ctrl</kbd>+<kbd>↑</kbd>                 |
-| Maximize             | <kbd>Super</kbd>+<kbd>Ctrl</kbd>+<kbd>↓</kbd>                 |
-| Focus left / right   | <kbd>Super</kbd>+<kbd>[</kbd> / <kbd>]</kbd>                  |
-| Swap left / right    | <kbd>Super</kbd>+<kbd>Shift</kbd>+<kbd>[</kbd> / <kbd>]</kbd> |
-| Move to next monitor | <kbd>Super</kbd>+<kbd>Ctrl</kbd>+<kbd>M</kbd>                 |
+| Action               | Default                                                      |
+| -------------------- | ------------------------------------------------------------ |
+| Tile left            | <kbd>Super</kbd>+<kbd>Ctrl</kbd>+<kbd>←</kbd>                |
+| Tile right           | <kbd>Super</kbd>+<kbd>Ctrl</kbd>+<kbd>→</kbd>                |
+| Tile centre          | <kbd>Super</kbd>+<kbd>Ctrl</kbd>+<kbd>↑</kbd>                |
+| Maximize             | <kbd>Super</kbd>+<kbd>Ctrl</kbd>+<kbd>↓</kbd>                |
+| Focus left / right   | <kbd>Super</kbd>+<kbd>[</kbd> / <kbd>]</kbd>                 |
+| Swap left / right    | <kbd>Super</kbd>+<kbd>Ctrl</kbd>+<kbd>[</kbd> / <kbd>]</kbd> |
+| Move to next monitor | <kbd>Super</kbd>+<kbd>Ctrl</kbd>+<kbd>M</kbd>                |
 
 The split is deliberate: <kbd>Super</kbd>+<kbd>Ctrl</kbd> moves _windows_, and
 bare <kbd>Super</kbd>+bracket moves _focus_ without touching anything.
@@ -84,7 +84,12 @@ The code is split so that the interesting half is testable off the Shell:
   wrong is silent: the shortcut simply does nothing and no error is logged.
 - `modules/tiler.js` is the only file that touches Meta, Shell or Main. It reads
   facts off Mutter and calls it; every decision is delegated to the two files
-  above. `scripts/headless-check.sh` covers it.
+  above.
+
+`scripts/headless-check.sh` boots a throwaway Shell and checks that the
+extension enables, disables and re-enables without leaking a signal and without
+a JavaScript error. It presses no keys and asserts no geometry, so it is a
+lifetime check rather than evidence that any placement is correct.
 
 ## Releasing
 
