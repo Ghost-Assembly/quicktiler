@@ -30,6 +30,7 @@ export const ACTIONS = Object.freeze([
     Object.freeze({ key: 'swap-left', label: 'Swap left' }),
     Object.freeze({ key: 'swap-right', label: 'Swap right' }),
     Object.freeze({ key: 'move-monitor-next', label: 'Move to next monitor' }),
+    Object.freeze({ key: 'move-monitor-prev', label: 'Move to previous monitor' }),
 ]);
 
 /**
@@ -38,3 +39,25 @@ export const ACTIONS = Object.freeze([
  * @type {ReadonlyArray<string>}
  */
 export const ACTION_KEYS = Object.freeze(ACTIONS.map(action => action.key));
+
+/**
+ * Which other actions already hold an accelerator.
+ *
+ * Two actions given the same accelerator do not both work: Mutter registers the
+ * first and refuses the second, so the shortcut shows as set in the preferences
+ * window and does nothing. Checking before writing is what stops that.
+ *
+ * @param {string} key Schema key of the action being assigned.
+ * @param {string} accelerator Accelerator being assigned, as returned by
+ *   Gtk.accelerator_name_with_keycode.
+ * @param {(key: string) => string[]} bindingsFor Current accelerators for a key.
+ *   Injected so this stays free of Gio; prefs.js passes settings.get_strv.
+ * @returns {string[]} Keys of the actions already holding it, excluding `key`.
+ */
+export function conflictingActions(key, accelerator, bindingsFor) {
+    if (!accelerator) return [];
+
+    return ACTION_KEYS.filter(
+        other => other !== key && bindingsFor(other).includes(accelerator),
+    );
+}

@@ -80,5 +80,13 @@
       </description>
     </key>
 
+    <key type="as" name="move-monitor-prev">
+      <default><![CDATA[['<Super><Control><Shift>m']]]></default>
+      <summary>Move to previous monitor</summary>
+      <description>
+        Move the focused window to the previous monitor, keeping its zone.
+      </description>
+    </key>
+
   </schema>
 </schemalist>

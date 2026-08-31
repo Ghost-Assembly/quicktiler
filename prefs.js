@@ -15,7 +15,7 @@ import {
 // modules/actions.js imports nothing, so it is safe to pull into this process,
 // which has no access to gnome-shell's resource:// modules. Sharing it is what
 // stops the action list here from drifting away from the one tiler.js binds.
-import { ACTIONS } from './modules/actions.js';
+import { ACTIONS, conflictingActions } from './modules/actions.js';
 
 /**
  * Whether a captured key combination is usable as a global shortcut.
@@ -102,9 +102,23 @@ const ShortcutRow = GObject.registerClass(
 
                 if (!isValidBinding(mask, keyval)) return Gdk.EVENT_STOP;
 
-                this._settings.set_strv(this._key, [
-                    Gtk.accelerator_name_with_keycode(null, keyval, keycode, mask),
-                ]);
+                const accelerator = Gtk.accelerator_name_with_keycode(
+                    null,
+                    keyval,
+                    keycode,
+                    mask,
+                );
+
+                // Mutter registers the first action to claim an accelerator and
+                // refuses the rest, so leaving both set would show a shortcut
+                // here that does nothing at all. Clear the previous holder,
+                // which is what GNOME Settings does.
+                for (const other of conflictingActions(this._key, accelerator, key =>
+                    this._settings.get_strv(key),
+                ))
+                    this._settings.set_strv(other, []);
+
+                this._settings.set_strv(this._key, [accelerator]);
                 dialog.close();
                 return Gdk.EVENT_STOP;
             });

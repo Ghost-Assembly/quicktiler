@@ -128,7 +128,8 @@ export class Tiler {
             ['focus-right', () => this._focusNeighbour(1)],
             ['swap-left', () => this._swapNeighbour(-1)],
             ['swap-right', () => this._swapNeighbour(1)],
-            ['move-monitor-next', () => this._moveToNextMonitor()],
+            ['move-monitor-next', () => this._moveToMonitor(1)],
+            ['move-monitor-prev', () => this._moveToMonitor(-1)],
         ]);
 
         for (const { key } of ACTIONS) {
@@ -299,6 +300,12 @@ export class Tiler {
      * Gathers eligible windows and hands the choice to modules/neighbours.js,
      * which is unit-tested. Nothing is decided here.
      *
+     * Candidates are not restricted to the current monitor. Frame rects are in
+     * absolute coordinates, so a monitor to the right simply contains windows
+     * further right, and both focus and swap fall out of that: a swapped window
+     * takes the neighbour's rect, which lies on the neighbour's monitor, and
+     * Mutter reassigns the monitor from the new geometry.
+     *
      * @param {Meta.Window} window Window to search from.
      * @param {number} direction -1 for left, 1 for right.
      * @param {Function} accepts Predicate a candidate must satisfy.
@@ -308,8 +315,6 @@ export class Tiler {
         const workspace = window.get_workspace();
         if (!workspace) return null;
 
-        const monitor = window.get_monitor();
-
         // isFocusable consults only the manageability facts, so reading the
         // placement ones for every window on the workspace would be wasted.
         const read = accepts === isFocusable ? describeManageable : describe;
@@ -318,7 +323,7 @@ export class Tiler {
 
         for (const other of workspace.list_windows()) {
             if (other === window) continue;
-            if (other.minimized || other.get_monitor() !== monitor) continue;
+            if (other.minimized) continue;
             if (!accepts(read(other))) continue;
 
             candidates.push({
@@ -376,8 +381,12 @@ export class Tiler {
         this._moveResize(neighbour, from);
     }
 
-    /** Move the focused window to the next monitor, keeping its zone. */
-    _moveToNextMonitor() {
+    /**
+     * Move the focused window to an adjacent monitor, keeping its zone.
+     *
+     * @param {number} direction 1 for the next monitor, -1 for the previous.
+     */
+    _moveToMonitor(direction) {
         const window = this._focused(isPlaceable);
         if (!window) return;
 
@@ -390,7 +399,11 @@ export class Tiler {
         if (!source) return;
 
         const zoneId = this._currentZone(window, source);
-        const target = (window.get_monitor() + 1) % count;
+
+        // The addend keeps the operand positive; JavaScript's % returns a
+        // negative remainder for a negative left-hand side, which would index
+        // off the end of the monitor list going left from the first one.
+        const target = (window.get_monitor() + direction + count) % count;
 
         window.move_to_monitor(target);
 

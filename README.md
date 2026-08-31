@@ -31,18 +31,28 @@ and there is no state to go stale.
 Every default was checked against the shortcuts GNOME 50 binds out of the box,
 so none of them collide and you do not have to unbind anything.
 
-| Action               | Default                                                      |
-| -------------------- | ------------------------------------------------------------ |
-| Tile left            | <kbd>Super</kbd>+<kbd>Ctrl</kbd>+<kbd>←</kbd>                |
-| Tile right           | <kbd>Super</kbd>+<kbd>Ctrl</kbd>+<kbd>→</kbd>                |
-| Tile centre          | <kbd>Super</kbd>+<kbd>Ctrl</kbd>+<kbd>↑</kbd>                |
-| Maximize             | <kbd>Super</kbd>+<kbd>Ctrl</kbd>+<kbd>↓</kbd>                |
-| Focus left / right   | <kbd>Super</kbd>+<kbd>[</kbd> / <kbd>]</kbd>                 |
-| Swap left / right    | <kbd>Super</kbd>+<kbd>Ctrl</kbd>+<kbd>[</kbd> / <kbd>]</kbd> |
-| Move to next monitor | <kbd>Super</kbd>+<kbd>Ctrl</kbd>+<kbd>M</kbd>                |
+| Action               | Default                                                        |
+| -------------------- | -------------------------------------------------------------- |
+| Tile left            | <kbd>Super</kbd>+<kbd>Ctrl</kbd>+<kbd>←</kbd>                  |
+| Tile right           | <kbd>Super</kbd>+<kbd>Ctrl</kbd>+<kbd>→</kbd>                  |
+| Tile centre          | <kbd>Super</kbd>+<kbd>Ctrl</kbd>+<kbd>↑</kbd>                  |
+| Maximize             | <kbd>Super</kbd>+<kbd>Ctrl</kbd>+<kbd>↓</kbd>                  |
+| Focus left / right   | <kbd>Super</kbd>+<kbd>[</kbd> / <kbd>]</kbd>                   |
+| Swap left / right    | <kbd>Super</kbd>+<kbd>Ctrl</kbd>+<kbd>[</kbd> / <kbd>]</kbd>   |
+| Move to next monitor | <kbd>Super</kbd>+<kbd>Ctrl</kbd>+<kbd>M</kbd>                  |
+| Move to prev monitor | <kbd>Super</kbd>+<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>M</kbd> |
 
 The split is deliberate: <kbd>Super</kbd>+<kbd>Ctrl</kbd> moves _windows_, and
 bare <kbd>Super</kbd>+bracket moves _focus_ without touching anything.
+
+Focus and swap both cross monitors. Frame rectangles are absolute, so the
+monitor to your right is simply where the windows further right are, and a
+swapped window lands exactly where its neighbour was.
+
+Assigning a shortcut that another Tiler action already holds clears it from that
+action first. Leaving both set would not work: Mutter registers whichever it
+sees first and refuses the other, so one of the two would show as bound in the
+preferences window and do nothing.
 
 Change any of them, and the gap between windows, in the preferences window.
 
