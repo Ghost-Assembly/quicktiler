@@ -48,21 +48,30 @@ export class Tiler {
      */
     constructor(settings) {
         this._settings = settings;
-
-        // Cached, not read per keypress. gTile hits GSettings several times per
-        // placement and re-parses its preset strings on every press.
         this._gap = settings.get_int('gap');
-        this._gapChangedId = settings.connect('changed::gap', () => {
-            this._gap = this._settings.get_int('gap');
-        });
-
+        this._gapChangedId = 0;
         this._bindings = [];
     }
 
     /** Register every keybinding. */
     enable() {
+        // Cached, not read per keypress. gTile hits GSettings several times per
+        // placement and re-parses its preset strings on every press.
+        //
+        // Connected here rather than in the constructor so that it pairs with
+        // the disconnect in disable(). A connect that outlives its disconnect is
+        // precisely the leak this extension exists not to have.
+        this._gap = this._settings.get_int('gap');
+        this._gapChangedId = this._settings.connect('changed::gap', () => {
+            this._gap = this._settings.get_int('gap');
+        });
+
         const bind = (key, handler) => {
-            Main.wm.addKeybinding(
+            // addKeybinding returns NONE when registration fails, which happens
+            // when two actions have been given the same accelerator. Recording a
+            // key that was never registered makes disable() call
+            // removeKeybinding on it, and the Shell warns.
+            const action = Main.wm.addKeybinding(
                 key,
                 this._settings,
                 // Holding a tile key must not race through the whole cycle.
@@ -70,6 +79,12 @@ export class Tiler {
                 Shell.ActionMode.NORMAL,
                 handler,
             );
+
+            if (action === Meta.KeyBindingAction.NONE) {
+                console.warn(`[tiler] could not bind ${key}; is it already in use?`);
+                return;
+            }
+
             this._bindings.push(key);
         };
 
@@ -127,11 +142,17 @@ export class Tiler {
      * Panel and dock struts are already excluded by Mutter, and reading it per
      * monitor is what makes multi-monitor support fall out for free.
      *
+     * get_workspace() is nullable — it returns null for a window that is
+     * unmanaging, and briefly while one is being created — so a keypress that
+     * lands on such a window would otherwise throw out of the handler.
+     *
      * @param {Meta.Window} window Window to locate.
-     * @returns {Mtk.Rectangle} Work area.
+     * @param {number} [monitor] Monitor to read, defaulting to the window's own.
+     * @returns {Mtk.Rectangle|null} Work area, or null if the window has no workspace.
      */
-    _workArea(window) {
-        return window.get_workspace().get_work_area_for_monitor(window.get_monitor());
+    _workArea(window, monitor = window.get_monitor()) {
+        const workspace = window.get_workspace();
+        return workspace ? workspace.get_work_area_for_monitor(monitor) : null;
     }
 
     /**
@@ -141,12 +162,10 @@ export class Tiler {
      * @returns {string|null} Zone id, or null if it is in none.
      */
     _currentZone(window) {
-        return matchZone(
-            window.get_frame_rect(),
-            this._workArea(window),
-            this._gap,
-            MATCH_TOLERANCE,
-        );
+        const workArea = this._workArea(window);
+        if (!workArea) return null;
+
+        return matchZone(window.get_frame_rect(), workArea, this._gap, MATCH_TOLERANCE);
     }
 
     /**
@@ -160,12 +179,24 @@ export class Tiler {
      * @param {{x: number, y: number, width: number, height: number}} rect Target frame.
      */
     _moveResize(window, rect) {
+        this._unmaximize(window);
+        window.move_resize_frame(true, rect.x, rect.y, rect.width, rect.height);
+    }
+
+    /**
+     * Drop any maximized state, so that a frame resize takes effect.
+     *
+     * Tests the disjunction: a window maximized in only one direction still
+     * ignores a resize along that axis. _toggleMaximize deliberately tests the
+     * conjunction instead, for a different reason given there.
+     *
+     * @param {Meta.Window} window Window to unmaximize.
+     */
+    _unmaximize(window) {
         if (window.maximized_horizontally || window.maximized_vertically) {
             window.set_unmaximize_flags(Meta.MaximizeFlags.BOTH);
             window.unmaximize();
         }
-
-        window.move_resize_frame(true, rect.x, rect.y, rect.width, rect.height);
     }
 
     /**
@@ -178,7 +209,10 @@ export class Tiler {
         const zone = zoneById(zoneId);
         if (!zone) return;
 
-        this._moveResize(window, projectZone(zone, this._workArea(window), this._gap));
+        const workArea = this._workArea(window);
+        if (!workArea) return;
+
+        this._moveResize(window, projectZone(zone, workArea, this._gap));
     }
 
     /**
@@ -205,12 +239,12 @@ export class Tiler {
         const window = this._target();
         if (!window) return;
 
-        if (window.maximized_horizontally && window.maximized_vertically) {
-            window.set_unmaximize_flags(Meta.MaximizeFlags.BOTH);
-            window.unmaximize();
-        } else {
-            window.maximize();
-        }
+        // The conjunction, where _unmaximize uses the disjunction: a window
+        // maximized in only one direction should finish maximizing rather than
+        // restore, which is what GNOME's own maximize key does.
+        if (window.maximized_horizontally && window.maximized_vertically)
+            this._unmaximize(window);
+        else window.maximize();
     }
 
     /**
@@ -229,10 +263,13 @@ export class Tiler {
         const centre = rect.x + rect.width / 2;
         const monitor = window.get_monitor();
 
+        const workspace = window.get_workspace();
+        if (!workspace) return null;
+
         let best = null;
         let bestDistance = Infinity;
 
-        for (const other of window.get_workspace().list_windows()) {
+        for (const other of workspace.list_windows()) {
             if (other === window) continue;
             if (other.minimized || other.get_monitor() !== monitor) continue;
             if (!accepts(describe(other))) continue;
@@ -274,21 +311,20 @@ export class Tiler {
         const neighbour = this._neighbour(window, direction, isPlaceable);
         if (!neighbour) return;
 
+        // Unmaximize both before reading their geometry. A maximized window's
+        // frame rect is the entire work area, so capturing it first would hand
+        // the neighbour a work-area-sized frame with no maximized flag: it looks
+        // maximized, Mutter's own restore no longer applies to it, and matchZone
+        // reports no zone for it at all. isPlaceable admits maximized windows by
+        // design, so this path is reachable.
+        this._unmaximize(window);
+        this._unmaximize(neighbour);
+
         const from = window.get_frame_rect();
         const to = neighbour.get_frame_rect();
 
-        this._moveResize(window, {
-            x: to.x,
-            y: to.y,
-            width: to.width,
-            height: to.height,
-        });
-        this._moveResize(neighbour, {
-            x: from.x,
-            y: from.y,
-            width: from.width,
-            height: from.height,
-        });
+        this._moveResize(window, to);
+        this._moveResize(neighbour, from);
     }
 
     /** Move the focused window to the next monitor, keeping its zone. */
@@ -313,7 +349,9 @@ export class Tiler {
         const zone = zoneById(zoneId);
         if (!zone) return;
 
-        const workArea = window.get_workspace().get_work_area_for_monitor(target);
+        const workArea = this._workArea(window, target);
+        if (!workArea) return;
+
         this._moveResize(window, projectZone(zone, workArea, this._gap));
     }
 }
