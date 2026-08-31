@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist gettext-domain="tiler">
+  <schema id="org.gnome.shell.extensions.tiler"
+          path="/org/gnome/shell/extensions/tiler/">
+
+    <key type="i" name="gap">
+      <default>8</default>
+      <range min="0" max="200"/>
+      <summary>Gap</summary>
+      <description>
+        Pixels between neighbouring tiled windows and between a tiled window and
+        the edge of the work area.
+      </description>
+    </key>
+
+    <!--
+      Keybindings. Every default below was checked against the 90 Super
+      accelerators GNOME 50 binds out of the box, so none of them collide and no
+      GNOME default has to be unbound. Super+Left/Right belong to Mutter's
+      toggle-tiled-left/right, Super+Up/Down to maximize/unmaximize, Super+Home
+      to switch-to-workspace-1, and Super+Shift+Left/Right to move-to-monitor-*.
+    -->
+
+    <key type="as" name="tile-left">
+      <default><![CDATA[['<Super><Control>Left']]]></default>
+      <summary>Tile left</summary>
+      <description>Cycle the focused window through the left zones.</description>
+    </key>
+
+    <key type="as" name="tile-right">
+      <default><![CDATA[['<Super><Control>Right']]]></default>
+      <summary>Tile right</summary>
+      <description>Cycle the focused window through the right zones.</description>
+    </key>
+
+    <key type="as" name="tile-center">
+      <default><![CDATA[['<Super><Control>Up']]]></default>
+      <summary>Tile centre</summary>
+      <description>
+        Cycle the focused window through the centre zones: half, top third, then
+        bottom two thirds.
+      </description>
+    </key>
+
+    <key type="as" name="tile-maximize">
+      <default><![CDATA[['<Super><Control>Down']]]></default>
+      <summary>Maximize</summary>
+      <description>Fill the work area, or restore if already filling it.</description>
+    </key>
+
+    <key type="as" name="focus-left">
+      <default><![CDATA[['<Super>bracketleft']]]></default>
+      <summary>Focus left</summary>
+      <description>Move focus to the nearest window to the left.</description>
+    </key>
+
+    <key type="as" name="focus-right">
+      <default><![CDATA[['<Super>bracketright']]]></default>
+      <summary>Focus right</summary>
+      <description>Move focus to the nearest window to the right.</description>
+    </key>
+
+    <key type="as" name="swap-left">
+      <default><![CDATA[['<Super><Control>bracketleft']]]></default>
+      <summary>Swap left</summary>
+      <description>Exchange the focused window with its left neighbour.</description>
+    </key>
+
+    <key type="as" name="swap-right">
+      <default><![CDATA[['<Super><Control>bracketright']]]></default>
+      <summary>Swap right</summary>
+      <description>Exchange the focused window with its right neighbour.</description>
+    </key>
+
+    <key type="as" name="move-monitor-next">
+      <default><![CDATA[['<Super><Control>m']]]></default>
+      <summary>Move to next monitor</summary>
+      <description>
+        Move the focused window to the next monitor, keeping its zone.
+      </description>
+    </key>
+
+  </schema>
+</schemalist>

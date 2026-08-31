@@ -1,0 +1,46 @@
+name: Release
+
+on:
+    push:
+        tags: ['v*']
+
+permissions:
+    contents: read
+
+jobs:
+    release:
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        permissions:
+            contents: write
+        steps:
+            - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+              with:
+                  fetch-depth: 0
+                  persist-credentials: false
+
+            - name: Install GLib schema compiler
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y --no-install-recommends libglib2.0-bin
+
+            - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4
+              with:
+                  # A release publishes a runtime artifact, so it must not restore a
+                  # cache that a pull request could have poisoned.
+                  cache: false
+
+            - run: npm ci
+
+            # Gate the release on the full suite; never publish an untested build.
+            - run: just ci
+
+            - name: Create the release
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  TAG: ${{ github.ref_name }}
+              run: |
+                  gh release create "$TAG" \
+                    --title "$TAG" \
+                    --generate-notes \
+                    tiler@napalm255.github.io.shell-extension.zip

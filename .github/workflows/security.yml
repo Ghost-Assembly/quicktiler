@@ -1,0 +1,52 @@
+name: Security
+
+on:
+    push:
+        branches: [main]
+    pull_request:
+    schedule:
+        # Weekly, so new advisories are caught without needing a code change.
+        - cron: '17 5 * * 1'
+
+permissions:
+    contents: read
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    codeql:
+        name: CodeQL
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        permissions:
+            contents: read
+            security-events: write
+            actions: read
+        steps:
+            - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+              with:
+                  persist-credentials: false
+
+            - uses: github/codeql-action/init@6f5948dfacef28e207b48d0905cf90c03365536d # v3
+              with:
+                  languages: javascript-typescript
+                  queries: security-extended
+
+            - uses: github/codeql-action/analyze@6f5948dfacef28e207b48d0905cf90c03365536d # v3
+
+    scanners:
+        name: Scanners
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        steps:
+            - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+              with:
+                  persist-credentials: false
+
+            - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4
+
+            # Same recipe as `just security` locally: gitleaks, trivy, osv-scanner,
+            # actionlint and zizmor, all pinned by mise.toml.
+            - run: just security

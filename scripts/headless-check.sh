@@ -1,0 +1,113 @@
+#!/usr/bin/env bash
+# Boot a throwaway headless gnome-shell with Tiler installed and assert that it
+# enables cleanly, disables cleanly, and can be enabled again without leaking.
+#
+# The enable/disable/enable cycle is the point: it is the shape of bug gTile
+# has, where a signal connected at enable is never disconnected, so the second
+# enable stacks a second handler and the shell warns.
+#
+# This needs a real gnome-shell and so runs locally only; GitHub's runners have
+# no GNOME 50.
+
+set -euo pipefail
+
+UUID="tiler@napalm255.github.io"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+TIMEOUT="${TIMEOUT:-60}"
+
+# The private XDG directories must be exported BEFORE dbus-run-session starts,
+# not after. D-Bus activates dconf as a child of the bus, so a service started
+# by a bus that inherited the real XDG_CONFIG_HOME will read and write the
+# developer's own dconf database — `gsettings set` then silently affects the
+# real session and the shell under test loads the real extension list.
+if [[ -z "${TILER_HEADLESS:-}" ]]; then
+    TILER_WORK="$(mktemp -d)"
+    export TILER_HEADLESS=1
+    export TILER_WORK
+    export XDG_CONFIG_HOME="$TILER_WORK/config"
+    export XDG_DATA_HOME="$TILER_WORK/data"
+    export XDG_CACHE_HOME="$TILER_WORK/cache"
+    export XDG_RUNTIME_DIR="$TILER_WORK/run"
+    mkdir -p "$XDG_CONFIG_HOME" "$XDG_DATA_HOME" "$XDG_CACHE_HOME" "$XDG_RUNTIME_DIR"
+    chmod 700 "$XDG_RUNTIME_DIR"
+
+    exec dbus-run-session -- "${BASH_SOURCE[0]}" "$@"
+fi
+
+WORK="$TILER_WORK"
+LOG="$WORK/shell.log"
+
+EXT_DIR="$XDG_DATA_HOME/gnome-shell/extensions/$UUID"
+mkdir -p "$EXT_DIR"
+cp -r "$REPO_ROOT"/metadata.json "$REPO_ROOT"/extension.js "$REPO_ROOT"/prefs.js \
+      "$REPO_ROOT"/modules "$REPO_ROOT"/schemas "$EXT_DIR/"
+glib-compile-schemas "$EXT_DIR/schemas"
+
+gsettings set org.gnome.shell disable-user-extensions false
+gsettings set org.gnome.shell enabled-extensions "['$UUID']"
+
+# Guard against the isolation failing again: if dconf were leaking into the real
+# session, this would come back holding the developer's extensions.
+enabled="$(gsettings get org.gnome.shell enabled-extensions)"
+if [[ "$enabled" != "['$UUID']" ]]; then
+    echo "FAIL: dconf is not isolated; enabled-extensions = $enabled" >&2
+    rm -rf "$WORK"
+    exit 1
+fi
+
+# The enable marker is logged at debug level, which GLib drops unless asked
+# for. Without this the shell starts perfectly and the check still fails.
+export G_MESSAGES_DEBUG=all
+
+gnome-shell --wayland --headless --virtual-monitor 3840x1600 >"$LOG" 2>&1 &
+SHELL_PID=$!
+# shellcheck disable=SC2317  # invoked via trap
+cleanup() {
+    kill "$SHELL_PID" 2>/dev/null || true
+    wait "$SHELL_PID" 2>/dev/null || true
+    rm -rf "$WORK"
+}
+trap cleanup EXIT
+
+fail() {
+    echo "FAIL: $1" >&2
+    echo "---- shell log (tiler and errors only) ----" >&2
+    grep -aiE 'tiler|JS ERROR|Extension' "$LOG" >&2 || echo "(nothing matched)" >&2
+    exit 1
+}
+
+# Counts occurrences rather than truncating between phases: gnome-shell keeps
+# the log open, so truncating leaves its file offset intact and the next write
+# pads the gap with NULs — grep then reports "binary file matches" and the
+# failure diagnostics come out empty at exactly the wrong moment.
+wait_for() {
+    local pattern="$1" wanted="${2:-1}" waited=0
+    while ((waited < TIMEOUT)); do
+        (($(grep -ac "$pattern" "$LOG") >= wanted)) && return 0
+        kill -0 "$SHELL_PID" 2>/dev/null || fail "gnome-shell exited early"
+        sleep 1
+        ((waited++))
+    done
+    return 1
+}
+
+wait_for '\[tiler\] enabled' || fail "extension never reported enabled within ${TIMEOUT}s"
+echo "ok: enabled"
+
+# A second enable must be as clean as the first.
+gnome-extensions disable "$UUID"
+sleep 2
+gnome-extensions enable "$UUID"
+wait_for '\[tiler\] enabled' 2 || fail "extension did not re-enable after disable"
+echo "ok: re-enabled after disable"
+
+if grep -qaE 'JS ERROR|Extension .* had error' "$LOG"; then
+    fail "javascript errors in the shell log"
+fi
+
+if grep -qaiE 'No signal handler|instance with invalid|Object .* has been already deallocated' "$LOG"; then
+    fail "signal or object lifetime warnings after re-enable"
+fi
+
+echo "ok: no errors or lifetime warnings"
+echo "PASS"

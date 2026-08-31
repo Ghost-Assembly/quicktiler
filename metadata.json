@@ -1,0 +1,10 @@
+{
+    "uuid": "tiler@napalm255.github.io",
+    "name": "Tiler",
+    "description": "Keyboard-driven zone tiling. Cycle windows through quarter, half and centre zones with no overlay, no timers and no background work.",
+    "shell-version": ["49", "50"],
+    "url": "https://github.com/napalm255/tiler",
+    "settings-schema": "org.gnome.shell.extensions.tiler",
+    "gettext-domain": "tiler",
+    "version-name": "0.1.0"
+}
