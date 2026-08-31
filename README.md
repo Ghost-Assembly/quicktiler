@@ -82,8 +82,15 @@ The code is split so that the interesting half is testable off the Shell:
 - `modules/windows.js` also imports nothing — the rules for which windows may be
   placed and which may take focus. These are worth isolating because getting one
   wrong is silent: the shortcut simply does nothing and no error is logged.
+- `modules/neighbours.js` imports nothing — which window lies next to another
+  in a given direction. Extracted from the Shell layer because it was the one
+  piece of real arithmetic left there, and getting it wrong is quiet: focus
+  moves somewhere unexpected, or nowhere, and nothing is logged.
+- `modules/actions.js` imports nothing — the single list of actions, shared with
+  the preferences process so the two cannot drift apart. A test reads the
+  gschema and fails if they do.
 - `modules/tiler.js` is the only file that touches Meta, Shell or Main. It reads
-  facts off Mutter and calls it; every decision is delegated to the two files
+  facts off Mutter and calls it; every decision is delegated to the files
   above.
 
 `scripts/headless-check.sh` boots a throwaway Shell and checks that the

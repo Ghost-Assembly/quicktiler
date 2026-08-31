@@ -2,8 +2,10 @@
 //
 // Everything here needs a live gnome-shell, so none of it is unit-testable off
 // the Shell. That is why it is kept thin and free of branching logic: geometry
-// and cycling live in modules/zones.js, and the rules about which windows may
-// be touched live in modules/windows.js. Both are pure and covered by Vitest.
+// and cycling live in modules/zones.js, the rules about which windows may be
+// touched live in modules/windows.js, choosing a neighbour lives in
+// modules/neighbours.js, and the action list lives in modules/actions.js. All
+// four import nothing and are covered by Vitest.
 //
 // scripts/headless-check.sh checks that what is left enables, disables and
 // re-enables without leaking. It presses no keys and asserts no geometry, so it
@@ -15,6 +17,7 @@ import Shell from 'gi://Shell';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import { ACTIONS } from './actions.js';
+import { nearestNeighbour } from './neighbours.js';
 import { isFocusable, isPlaceable } from './windows.js';
 import {
     MATCH_TOLERANCE,
@@ -25,18 +28,38 @@ import {
 } from './zones.js';
 
 /**
- * Read the facts modules/windows.js needs off a Meta.Window.
+ * The facts isFocusable needs, and nothing more.
+ *
+ * Split out from {@link describe} because _neighbour calls this for every
+ * window on the workspace: on the focus path the four placement facts below are
+ * read and thrown away, and allows_resize() in particular is not a plain getter
+ * in Mutter.
  *
  * @param {Meta.Window|null} window Window to describe.
- * @returns {object|null} Plain description, or null.
+ * @returns {object|null} Partial description, or null.
  */
-function describe(window) {
+function describeManageable(window) {
     if (!window) return null;
 
     return {
         normal: window.get_window_type() === Meta.WindowType.NORMAL,
         overrideRedirect: window.is_override_redirect(),
         skipTaskbar: window.is_skip_taskbar(),
+    };
+}
+
+/**
+ * Read the facts modules/windows.js needs off a Meta.Window.
+ *
+ * @param {Meta.Window|null} window Window to describe.
+ * @returns {object|null} Plain description, or null.
+ */
+function describe(window) {
+    const manageable = describeManageable(window);
+    if (!manageable) return null;
+
+    return {
+        ...manageable,
         fullscreen: window.is_fullscreen(),
         maximized: window.maximized_horizontally && window.maximized_vertically,
         allowsMove: window.allows_move(),
@@ -273,8 +296,8 @@ export class Tiler {
     /**
      * The nearest window to one side of the focused window.
      *
-     * Compares frame-rect centres rather than zones, so it works for windows
-     * that were never tiled.
+     * Gathers eligible windows and hands the choice to modules/neighbours.js,
+     * which is unit-tested. Nothing is decided here.
      *
      * @param {Meta.Window} window Window to search from.
      * @param {number} direction -1 for left, 1 for right.
@@ -282,31 +305,34 @@ export class Tiler {
      * @returns {Meta.Window|null} The neighbour, if there is one.
      */
     _neighbour(window, direction, accepts) {
-        const rect = window.get_frame_rect();
-        const centre = rect.x + rect.width / 2;
-        const monitor = window.get_monitor();
-
         const workspace = window.get_workspace();
         if (!workspace) return null;
 
-        let best = null;
-        let bestDistance = Infinity;
+        const monitor = window.get_monitor();
+
+        // isFocusable consults only the manageability facts, so reading the
+        // placement ones for every window on the workspace would be wasted.
+        const read = accepts === isFocusable ? describeManageable : describe;
+
+        const candidates = [];
 
         for (const other of workspace.list_windows()) {
             if (other === window) continue;
             if (other.minimized || other.get_monitor() !== monitor) continue;
-            if (!accepts(describe(other))) continue;
+            if (!accepts(read(other))) continue;
 
-            const otherRect = other.get_frame_rect();
-            const distance = (otherRect.x + otherRect.width / 2 - centre) * direction;
-
-            if (distance <= 0 || distance >= bestDistance) continue;
-
-            bestDistance = distance;
-            best = other;
+            candidates.push({
+                window: other,
+                rect: other.get_frame_rect(),
+                // Stable across keypresses, where list_windows() order is not.
+                seq: other.get_stable_sequence(),
+            });
         }
 
-        return best;
+        return (
+            nearestNeighbour(window.get_frame_rect(), candidates, direction)?.window ??
+            null
+        );
     }
 
     /**
