@@ -5,6 +5,11 @@ import security from 'eslint-plugin-security';
 // GJS globals. `eslint-config-gjs` and `eslint-plugin-gjs` were both last
 // published in 2022 and fail our maintenance bar, so the globals are declared
 // here rather than pulled from an unmaintained package.
+//
+// This list is deliberately not `globals.browser`. GJS is not a browser: it has
+// no document, no localStorage, no fetch and no DOM. Declaring the browser set
+// tells ESLint those names are defined, so a typo that reaches for one is
+// accepted silently and fails only at runtime inside the Shell.
 const gjsGlobals = {
     ARGV: 'readonly',
     imports: 'readonly',
@@ -17,6 +22,17 @@ const gjsGlobals = {
     _: 'readonly',
     C_: 'readonly',
     N_: 'readonly',
+
+    // Provided by GJS itself rather than by any gi:// import.
+    console: 'readonly',
+    setTimeout: 'readonly',
+    setInterval: 'readonly',
+    clearTimeout: 'readonly',
+    clearInterval: 'readonly',
+    queueMicrotask: 'readonly',
+    structuredClone: 'readonly',
+    TextEncoder: 'readonly',
+    TextDecoder: 'readonly',
 };
 
 export default [
@@ -29,7 +45,7 @@ export default [
         languageOptions: {
             ecmaVersion: 2022,
             sourceType: 'module',
-            globals: { ...gjsGlobals, ...globals.browser, global: 'readonly' },
+            globals: { ...gjsGlobals, global: 'readonly' },
         },
         rules: {
             'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],

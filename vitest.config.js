@@ -6,9 +6,12 @@ export default defineConfig({
         coverage: {
             provider: 'v8',
             reporter: ['text', 'lcov'],
-            // Only the pure logic layer is unit-testable off-shell; the rest
-            // needs a live gnome-shell and is covered by scripts/headless-check.sh.
-            include: ['modules/zones.js'],
+            // Every module that imports nothing is unit-testable off-shell and
+            // belongs here. The rest needs a live gnome-shell. Listing only some
+            // of the pure modules silently drops their coverage from the lcov
+            // that sonar.yml consumes, which is how windows.js came to report
+            // nothing despite having a full suite.
+            include: ['modules/zones.js', 'modules/windows.js'],
         },
     },
 });
