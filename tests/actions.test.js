@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
-import { ACTIONS, ACTION_KEYS, conflictingActions } from '../modules/actions.js';
+import { ACTIONS, ACTION_KEYS } from '../modules/actions.js';
 
 const SCHEMA = fileURLToPath(
     new URL('../schemas/org.gnome.shell.extensions.tiler.gschema.xml', import.meta.url),
@@ -57,65 +57,5 @@ describe('ACTIONS', () => {
     it('is frozen, so no caller can reorder or extend it', () => {
         expect(Object.isFrozen(ACTIONS)).toBe(true);
         expect(ACTIONS.every(action => Object.isFrozen(action))).toBe(true);
-    });
-});
-
-describe('conflictingActions', () => {
-    /**
-     * A lookup over a map of schema key to accelerators.
-     *
-     * A Map rather than an object literal for the reason modules/zones.js gives:
-     * indexing an object resolves inherited keys.
-     *
-     * @param {Record<string, string[]>} assigned Accelerators per schema key.
-     * @returns {(key: string) => string[]} Lookup function.
-     */
-    const bindings = assigned => {
-        const map = new Map(Object.entries(assigned));
-        return key => map.get(key) ?? [];
-    };
-
-    it('finds no conflict when nothing else holds the accelerator', () => {
-        const lookup = bindings({ 'tile-right': ['<Super>k'] });
-
-        expect(conflictingActions('tile-left', '<Super>j', lookup)).toEqual([]);
-    });
-
-    it('names the action already holding the accelerator', () => {
-        const lookup = bindings({ 'swap-right': ['<Super>j'] });
-
-        expect(conflictingActions('tile-left', '<Super>j', lookup)).toEqual([
-            'swap-right',
-        ]);
-    });
-
-    it('does not report the action against itself', () => {
-        const lookup = bindings({ 'tile-left': ['<Super>j'] });
-
-        expect(conflictingActions('tile-left', '<Super>j', lookup)).toEqual([]);
-    });
-
-    it('reports every holder when more than one already has it', () => {
-        const lookup = bindings({
-            'swap-left': ['<Super>j'],
-            'focus-right': ['<Super>j'],
-        });
-
-        expect(conflictingActions('tile-left', '<Super>j', lookup).sort()).toEqual([
-            'focus-right',
-            'swap-left',
-        ]);
-    });
-
-    it('treats clearing a binding as conflicting with nothing', () => {
-        const lookup = bindings({ 'swap-right': [''] });
-
-        expect(conflictingActions('tile-left', '', lookup)).toEqual([]);
-    });
-
-    it('ignores an action whose accelerator merely resembles the new one', () => {
-        const lookup = bindings({ 'swap-right': ['<Super><Shift>j'] });
-
-        expect(conflictingActions('tile-left', '<Super>j', lookup)).toEqual([]);
     });
 });

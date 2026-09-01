@@ -1,0 +1,447 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import Meta from 'gi://Meta';
+
+import { ACTION_KEYS } from '../modules/actions.js';
+import { Tiler } from '../modules/tiler.js';
+import { projectZone, zoneById } from '../modules/zones.js';
+import * as Main from './stubs/shell-main.js';
+import { FakeWindow, createSettings, createWorld } from './support/world.js';
+
+const WIDE = { x: 0, y: 0, width: 1920, height: 1080 };
+const SECOND = { x: 1920, y: 0, width: 1280, height: 1024 };
+const GAP = 8;
+
+/** The rectangle a zone projects to on the primary work area. */
+const zone = (id, workArea = WIDE, gap = GAP) =>
+    projectZone(zoneById(id), workArea, gap);
+
+describe('Tiler', () => {
+    let settings;
+    let tiler;
+    let world;
+
+    /**
+     * Build a world, a Tiler and enable it.
+     *
+     * @param {Array<object>} [workAreas] One work area per monitor.
+     * @returns {object} The world.
+     */
+    const start = (workAreas = [WIDE]) => {
+        world = createWorld(workAreas);
+        tiler = new Tiler(settings);
+        tiler.enable();
+        return world;
+    };
+
+    beforeEach(() => {
+        Main.reset();
+        settings = createSettings({ gap: GAP });
+        vi.spyOn(console, 'warn').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    describe('enable and disable', () => {
+        it('registers each action with autorepeat ignored', () => {
+            start();
+
+            expect([...Main.registered.keys()].sort()).toEqual([...ACTION_KEYS].sort());
+            for (const call of Main.addCalls) {
+                expect(call.flags).toBe(Meta.KeyBindingFlags.IGNORE_AUTOREPEAT);
+                expect(call.settings).toBe(settings);
+            }
+        });
+
+        // Mutter returns KeyBindingAction.NONE when two actions share an
+        // accelerator. Recording the key anyway made disable() call
+        // removeKeybinding on a binding that was never registered.
+        it('does not track a keybinding Mutter refused', () => {
+            Main.refuse.add('tile-left');
+            start();
+            tiler.disable();
+
+            expect(Main.removeCalls).not.toContain('tile-left');
+            expect(Main.removeCalls.sort()).toEqual(
+                ACTION_KEYS.filter(k => k !== 'tile-left').sort(),
+            );
+        });
+
+        it('warns when a keybinding is refused', () => {
+            Main.refuse.add('swap-right');
+            start();
+
+            expect(console.warn).toHaveBeenCalledWith(
+                expect.stringContaining('could not bind swap-right'),
+            );
+        });
+
+        it('disconnects the gap handler on disable', () => {
+            start();
+            expect(settings.connected.size).toBe(1);
+
+            tiler.disable();
+            expect(settings.connected.size).toBe(0);
+        });
+
+        // The handler used to be connected in the constructor and disconnected
+        // in disable(), so a second enable() on one instance lost gap tracking.
+        it('still tracks the gap after a disable and a second enable', () => {
+            start();
+            tiler.disable();
+            tiler.enable();
+            settings.emitChange('gap', 40);
+
+            const window = world.workspace.add(new FakeWindow())[0];
+            world.focus(window);
+            Main.press('tile-left');
+
+            expect(window.get_frame_rect()).toEqual(zone('left-quarter', WIDE, 40));
+        });
+
+        it('picks up a gap change without being re-enabled', () => {
+            start();
+            settings.emitChange('gap', 0);
+
+            const window = world.workspace.add(new FakeWindow())[0];
+            world.focus(window);
+            Main.press('tile-left');
+
+            expect(window.get_frame_rect()).toEqual(zone('left-quarter', WIDE, 0));
+        });
+    });
+
+    describe('tiling', () => {
+        /** Focus a fresh ordinary window on the primary monitor. */
+        const focusOne = (options = {}) => {
+            const window = world.workspace.add(new FakeWindow(options))[0];
+            world.focus(window);
+            return window;
+        };
+
+        it('places an untiled window at the head of the cycle', () => {
+            start();
+            const window = focusOne();
+
+            Main.press('tile-left');
+            expect(window.get_frame_rect()).toEqual(zone('left-quarter'));
+        });
+
+        it('advances through the left cycle and wraps', () => {
+            start();
+            const window = focusOne();
+
+            Main.press('tile-left');
+            expect(window.get_frame_rect()).toEqual(zone('left-quarter'));
+            Main.press('tile-left');
+            expect(window.get_frame_rect()).toEqual(zone('left-half'));
+            Main.press('tile-left');
+            expect(window.get_frame_rect()).toEqual(zone('left-quarter'));
+        });
+
+        it('walks the three centre zones in order', () => {
+            start();
+            const window = focusOne();
+
+            for (const id of ['center-half', 'center-top', 'center-bottom']) {
+                Main.press('tile-center');
+                expect(window.get_frame_rect()).toEqual(zone(id));
+            }
+        });
+
+        it('enters the head of a cycle when the window is in a foreign zone', () => {
+            start();
+            const window = focusOne();
+
+            Main.press('tile-right');
+            expect(window.get_frame_rect()).toEqual(zone('right-quarter'));
+            Main.press('tile-left');
+            expect(window.get_frame_rect()).toEqual(zone('left-quarter'));
+        });
+
+        it('unmaximizes before placing, so the frame resize takes effect', () => {
+            start();
+            const window = focusOne({ maximized: true });
+
+            Main.press('tile-left');
+
+            expect(window.maximized_horizontally).toBe(false);
+            expect(window.unmaximizeFlags).toBe(Meta.MaximizeFlags.BOTH);
+            expect(window.get_frame_rect()).toEqual(zone('left-quarter'));
+        });
+
+        it.each([
+            ['is fullscreen', { fullscreen: true }],
+            ['cannot be moved', { canMove: false }],
+            ['cannot be resized', { canResize: false }],
+            ['is not a normal window', { type: Meta.WindowType.DIALOG }],
+            ['is override-redirect', { overrideRedirect: true }],
+            ['is hidden from the taskbar', { skipTaskbar: true }],
+        ])('leaves a window that %s alone', (_reason, options) => {
+            start();
+            const window = focusOne(options);
+
+            Main.press('tile-left');
+            expect(window.moves).toHaveLength(0);
+        });
+
+        it('does nothing when no window has focus', () => {
+            start();
+            world.focus(null);
+
+            expect(() => Main.press('tile-left')).not.toThrow();
+        });
+
+        // get_workspace() is null for an unmanaging window; this used to throw
+        // out of the keybinding handler.
+        it('does not throw for a window with no workspace', () => {
+            start();
+            const orphan = new FakeWindow();
+            world.focus(orphan);
+
+            expect(() => Main.press('tile-left')).not.toThrow();
+            expect(orphan.moves).toHaveLength(0);
+        });
+    });
+
+    describe('maximize toggle', () => {
+        it('maximizes an ordinary window through Mutter, not a zone', () => {
+            start();
+            const window = world.workspace.add(new FakeWindow())[0];
+            world.focus(window);
+
+            Main.press('tile-maximize');
+
+            expect(window.maximized_horizontally).toBe(true);
+            expect(window.maximized_vertically).toBe(true);
+            expect(window.moves).toHaveLength(0);
+        });
+
+        it('restores a maximized window to its previous geometry', () => {
+            start();
+            const rect = { x: 300, y: 200, width: 640, height: 480 };
+            const window = world.workspace.add(new FakeWindow({ rect }))[0];
+            world.focus(window);
+
+            Main.press('tile-maximize');
+            Main.press('tile-maximize');
+
+            expect(window.maximized_horizontally).toBe(false);
+            expect(window.get_frame_rect()).toEqual(rect);
+        });
+
+        it('finishes maximizing a window maximized in only one direction', () => {
+            start();
+            const window = world.workspace.add(new FakeWindow())[0];
+            window.maximized_horizontally = true;
+            world.focus(window);
+
+            Main.press('tile-maximize');
+
+            expect(window.maximized_vertically).toBe(true);
+        });
+    });
+
+    describe('focus navigation', () => {
+        it('moves focus to the nearest window in the direction pressed', () => {
+            start();
+            const [left, middle, right] = world.workspace.add(
+                new FakeWindow({ rect: { x: 0, y: 0, width: 200, height: 200 } }),
+                new FakeWindow({ rect: { x: 800, y: 0, width: 200, height: 200 } }),
+                new FakeWindow({ rect: { x: 1600, y: 0, width: 200, height: 200 } }),
+            );
+            world.focus(middle);
+
+            Main.press('focus-right');
+            expect(Main.activated).toEqual([right]);
+
+            world.focus(middle);
+            Main.press('focus-left');
+            expect(Main.activated).toEqual([right, left]);
+        });
+
+        it('skips minimized windows', () => {
+            start();
+            const [origin, hidden, far] = world.workspace.add(
+                new FakeWindow({ rect: { x: 0, y: 0, width: 200, height: 200 } }),
+                new FakeWindow({
+                    rect: { x: 400, y: 0, width: 200, height: 200 },
+                    minimized: true,
+                }),
+                new FakeWindow({ rect: { x: 900, y: 0, width: 200, height: 200 } }),
+            );
+            world.focus(origin);
+
+            Main.press('focus-right');
+            expect(Main.activated).toEqual([far]);
+            expect(Main.activated).not.toContain(hidden);
+        });
+
+        it('moves focus onto a maximized window, which cannot be placed', () => {
+            start();
+            const [origin, big] = world.workspace.add(
+                new FakeWindow({ rect: { x: 0, y: 0, width: 200, height: 200 } }),
+                new FakeWindow({
+                    rect: { x: 900, y: 0, width: 200, height: 200 },
+                    maximized: true,
+                }),
+            );
+            world.focus(origin);
+
+            Main.press('focus-right');
+            expect(Main.activated).toEqual([big]);
+        });
+
+        it('crosses to a window on the next monitor', () => {
+            start([WIDE, SECOND]);
+            const [origin, other] = world.workspace.add(
+                new FakeWindow({ rect: { x: 100, y: 0, width: 200, height: 200 } }),
+                new FakeWindow({
+                    rect: { x: 2000, y: 0, width: 200, height: 200 },
+                    monitor: 1,
+                }),
+            );
+            world.focus(origin);
+
+            Main.press('focus-right');
+            expect(Main.activated).toEqual([other]);
+        });
+
+        it('does nothing when there is no window in that direction', () => {
+            start();
+            const only = world.workspace.add(new FakeWindow())[0];
+            world.focus(only);
+
+            Main.press('focus-left');
+            expect(Main.activated).toEqual([]);
+        });
+    });
+
+    describe('swapping', () => {
+        it('exchanges the geometry of two windows', () => {
+            start();
+            const a = { x: 0, y: 0, width: 300, height: 400 };
+            const b = { x: 900, y: 100, width: 500, height: 200 };
+            const [left, right] = world.workspace.add(
+                new FakeWindow({ rect: a }),
+                new FakeWindow({ rect: b }),
+            );
+            world.focus(left);
+
+            Main.press('swap-right');
+
+            expect(left.get_frame_rect()).toEqual(b);
+            expect(right.get_frame_rect()).toEqual(a);
+        });
+
+        // Both rects used to be read before _moveResize unmaximized, so the
+        // neighbour received the maximized window's work-area-sized frame
+        // without the maximized flag: it looked maximized, Mutter's restore no
+        // longer applied, and matchZone reported no zone for it.
+        it('does not hand the neighbour a work-area frame when one is maximized', () => {
+            start();
+            const restore = { x: 100, y: 100, width: 400, height: 300 };
+            const [big, small] = world.workspace.add(
+                new FakeWindow({ rect: restore, maximized: true }),
+                new FakeWindow({ rect: { x: 1200, y: 0, width: 500, height: 200 } }),
+            );
+            world.focus(big);
+
+            Main.press('swap-right');
+
+            expect(small.get_frame_rect()).not.toEqual(
+                expect.objectContaining({ width: WIDE.width, height: WIDE.height }),
+            );
+            expect(small.get_frame_rect()).toEqual(restore);
+            expect(big.maximized_horizontally).toBe(false);
+            expect(small.maximized_horizontally).toBe(false);
+        });
+
+        it('exchanges leftwards as well as rightwards', () => {
+            start();
+            const a = { x: 0, y: 0, width: 300, height: 400 };
+            const b = { x: 900, y: 100, width: 500, height: 200 };
+            const [left, right] = world.workspace.add(
+                new FakeWindow({ rect: a }),
+                new FakeWindow({ rect: b }),
+            );
+            world.focus(right);
+
+            Main.press('swap-left');
+
+            expect(right.get_frame_rect()).toEqual(a);
+            expect(left.get_frame_rect()).toEqual(b);
+        });
+
+        it('does nothing when there is no neighbour', () => {
+            start();
+            const only = world.workspace.add(new FakeWindow())[0];
+            world.focus(only);
+
+            Main.press('swap-right');
+            expect(only.moves).toHaveLength(0);
+        });
+    });
+
+    describe('moving between monitors', () => {
+        it('does nothing with only one monitor', () => {
+            start();
+            const window = world.workspace.add(new FakeWindow())[0];
+            world.focus(window);
+
+            Main.press('move-monitor-next');
+            expect(window.get_monitor()).toBe(0);
+            expect(window.moves).toHaveLength(0);
+        });
+
+        it('moves to the next monitor and wraps back round', () => {
+            start([WIDE, SECOND]);
+            const window = world.workspace.add(new FakeWindow())[0];
+            world.focus(window);
+
+            Main.press('move-monitor-next');
+            expect(window.get_monitor()).toBe(1);
+            Main.press('move-monitor-next');
+            expect(window.get_monitor()).toBe(0);
+        });
+
+        // Going left from monitor 0 needs the addend: a bare % would return -1.
+        it('moves to the previous monitor and wraps without a negative index', () => {
+            start([WIDE, SECOND]);
+            const window = world.workspace.add(new FakeWindow())[0];
+            world.focus(window);
+
+            Main.press('move-monitor-prev');
+            expect(window.get_monitor()).toBe(1);
+            Main.press('move-monitor-prev');
+            expect(window.get_monitor()).toBe(0);
+        });
+
+        it('keeps the zone, re-projected onto the destination work area', () => {
+            start([WIDE, SECOND]);
+            const window = world.workspace.add(new FakeWindow())[0];
+            world.focus(window);
+
+            Main.press('tile-left');
+            expect(window.get_frame_rect()).toEqual(zone('left-quarter', WIDE));
+
+            Main.press('move-monitor-next');
+            expect(window.get_monitor()).toBe(1);
+            expect(window.get_frame_rect()).toEqual(zone('left-quarter', SECOND));
+        });
+
+        it('moves an untiled window without placing it into a zone', () => {
+            start([WIDE, SECOND]);
+            const rect = { x: 300, y: 200, width: 640, height: 480 };
+            const window = world.workspace.add(new FakeWindow({ rect }))[0];
+            world.focus(window);
+
+            Main.press('move-monitor-next');
+
+            expect(window.get_monitor()).toBe(1);
+            expect(window.moves).toHaveLength(0);
+        });
+    });
+});

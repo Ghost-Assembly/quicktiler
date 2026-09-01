@@ -15,23 +15,29 @@ import {
 // modules/actions.js imports nothing, so it is safe to pull into this process,
 // which has no access to gnome-shell's resource:// modules. Sharing it is what
 // stops the action list here from drifting away from the one tiler.js binds.
-import { ACTIONS, conflictingActions } from './modules/actions.js';
+import { ACTIONS } from './modules/actions.js';
+import {
+    CAPTURE_ASSIGN,
+    CAPTURE_CANCEL,
+    CAPTURE_CLEAR,
+    captureOutcome,
+    conflictingActions,
+} from './modules/shortcuts.js';
 
-/**
- * Whether a captured key combination is usable as a global shortcut.
- *
- * A bare key would steal it from every application, and Shift alone just types
- * a capital letter.
- *
- * @param {number} mask Modifier mask, already reduced to the default mod mask.
- * @param {number} keyval Key value.
- * @returns {boolean} True if the combination may be bound.
- */
-function isValidBinding(mask, keyval) {
-    if (mask === 0 || mask === Gdk.ModifierType.SHIFT_MASK) return false;
-
-    return Gtk.accelerator_valid(keyval, mask);
-}
+// The Gdk and Gtk values modules/shortcuts.js needs. Passed in rather than
+// imported there, so the rules themselves stay testable on plain Node.
+const GTK_BINDING = {
+    get escapeKey() {
+        return Gdk.KEY_Escape;
+    },
+    get backspaceKey() {
+        return Gdk.KEY_BackSpace;
+    },
+    get shiftMask() {
+        return Gdk.ModifierType.SHIFT_MASK;
+    },
+    acceleratorValid: (keyval, mask) => Gtk.accelerator_valid(keyval, mask),
+};
 
 const ShortcutRow = GObject.registerClass(
     class TilerShortcutRow extends Adw.ActionRow {
@@ -89,18 +95,22 @@ const ShortcutRow = GObject.registerClass(
             controller.connect('key-pressed', (_controller, keyval, keycode, state) => {
                 const mask = state & Gtk.accelerator_get_default_mod_mask();
 
-                if (keyval === Gdk.KEY_Escape && mask === 0) {
+                // The decision lives in modules/shortcuts.js and is tested
+                // there; this only carries it out on the widgets.
+                const outcome = captureOutcome(keyval, mask, GTK_BINDING);
+
+                if (outcome === CAPTURE_CANCEL) {
                     dialog.close();
                     return Gdk.EVENT_STOP;
                 }
 
-                if (keyval === Gdk.KEY_BackSpace && mask === 0) {
+                if (outcome === CAPTURE_CLEAR) {
                     this._settings.set_strv(this._key, []);
                     dialog.close();
                     return Gdk.EVENT_STOP;
                 }
 
-                if (!isValidBinding(mask, keyval)) return Gdk.EVENT_STOP;
+                if (outcome !== CAPTURE_ASSIGN) return Gdk.EVENT_STOP;
 
                 const accelerator = Gtk.accelerator_name_with_keycode(
                     null,

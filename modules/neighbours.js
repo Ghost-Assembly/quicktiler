@@ -56,7 +56,7 @@ export function nearestNeighbour(origin, candidates, direction) {
         if (distance <= 0) continue;
 
         if (distance > bestDistance) continue;
-        if (distance === bestDistance && !(candidate.seq < best.seq)) continue;
+        if (distance === bestDistance && candidate.seq >= best.seq) continue;
 
         bestDistance = distance;
         best = candidate;
