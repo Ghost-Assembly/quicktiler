@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Tiler — keyboard-driven zone tiling for GNOME Shell</title>
+        <meta
+            name="description"
+            content="Documentation for Tiler, a keyboard-driven zone tiling extension for GNOME Shell: zones, shortcuts, architecture, testing and releasing."
+        />
+        <link rel="stylesheet" href="style.css" />
+    </head>
+    <body>
+        <a class="skip" href="#main">Skip to content</a>
+
+        <header>
+            <h1>Tiler</h1>
+            <p class="tagline">Keyboard-driven zone tiling for GNOME Shell.</p>
+            <p class="repo-link">
+                <a href="https://github.com/napalm255/tiler">Source on GitHub</a>
+            </p>
+            <nav aria-label="Contents">
+                <ul class="toc">
+                    <li><a href="#zones">Zones</a></li>
+                    <li><a href="#shortcuts">Shortcuts</a></li>
+                    <li><a href="#install">Install</a></li>
+                    <li><a href="#preferences">Preferences</a></li>
+                    <li><a href="#architecture">Architecture</a></li>
+                    <li><a href="#testing">Testing</a></li>
+                    <li><a href="#packaging">Packaging</a></li>
+                    <li><a href="#releasing">Releasing</a></li>
+                    <li><a href="#development">Development</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <main id="main">
+            <p>
+                Press a direction repeatedly and the focused window cycles through the
+                zones on that side. There is no overlay, no grid picker and no panel
+                button — between keypresses the extension creates no actors, runs no
+                timers and connects to no global signals, so it costs nothing at all.
+            </p>
+
+            <h2 id="zones">Zones</h2>
+            <p>
+                Both common ultrawide layouts — <code>1/4 + 1/2 + 1/4</code> and
+                <code>1/2 + 1/2</code> — are span-merges of the same four-column grid,
+                so Tiler has no notion of a “current layout” to switch between. It has
+                one flat list of zones and three cycles.
+            </p>
+            <div class="scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th scope="col">Key</th>
+                            <th scope="col">Cycles through</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Tile left</td>
+                            <td>left quarter → left half</td>
+                        </tr>
+                        <tr>
+                            <td>Tile right</td>
+                            <td>right quarter → right half</td>
+                        </tr>
+                        <tr>
+                            <td>Tile centre</td>
+                            <td>
+                                centre half → centre top third → centre bottom two
+                                thirds
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>
+                The centre thirds exist for the common arrangement of a video call above
+                a terminal.
+            </p>
+            <p>
+                Which zone a window is in is read back from its own geometry on every
+                keypress. Nothing is remembered, so cycling works on windows that some
+                other tool placed, and there is no state to go stale. The gap between
+                windows is applied by insetting the work area and splitting each
+                internal boundary, so neighbours end up exactly one gap apart and two
+                zones sharing a fraction resolve to the identical pixel — no seam, and
+                no lost pixel on an odd gap.
+            </p>
+
+            <h2 id="shortcuts">Shortcuts</h2>
+            <p>
+                Every default was checked against the shortcuts GNOME binds out of the
+                box, so none of them collide and you do not have to unbind anything.
+            </p>
+            <div class="scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th scope="col">Action</th>
+                            <th scope="col">Default</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Tile left</td>
+                            <td><kbd>Super</kbd>+<kbd>Ctrl</kbd>+<kbd>←</kbd></td>
+                        </tr>
+                        <tr>
+                            <td>Tile right</td>
+                            <td><kbd>Super</kbd>+<kbd>Ctrl</kbd>+<kbd>→</kbd></td>
+                        </tr>
+                        <tr>
+                            <td>Tile centre</td>
+                            <td><kbd>Super</kbd>+<kbd>Ctrl</kbd>+<kbd>↑</kbd></td>
+                        </tr>
+                        <tr>
+                            <td>Maximize</td>
+                            <td><kbd>Super</kbd>+<kbd>Ctrl</kbd>+<kbd>↓</kbd></td>
+                        </tr>
+                        <tr>
+                            <td>Focus left</td>
+                            <td><kbd>Super</kbd>+<kbd>[</kbd></td>
+                        </tr>
+                        <tr>
+                            <td>Focus right</td>
+                            <td><kbd>Super</kbd>+<kbd>]</kbd></td>
+                        </tr>
+                        <tr>
+                            <td>Swap left</td>
+                            <td><kbd>Super</kbd>+<kbd>Ctrl</kbd>+<kbd>[</kbd></td>
+                        </tr>
+                        <tr>
+                            <td>Swap right</td>
+                            <td><kbd>Super</kbd>+<kbd>Ctrl</kbd>+<kbd>]</kbd></td>
+                        </tr>
+                        <tr>
+                            <td>Move to next monitor</td>
+                            <td><kbd>Super</kbd>+<kbd>Ctrl</kbd>+<kbd>M</kbd></td>
+                        </tr>
+                        <tr>
+                            <td>Move to previous monitor</td>
+                            <td>
+                                <kbd>Super</kbd>+<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd
+                                    >M</kbd
+                                >
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>
+                The split is deliberate: <kbd>Super</kbd>+<kbd>Ctrl</kbd> moves
+                <em>windows</em>, and bare <kbd>Super</kbd>+bracket moves
+                <em>focus</em> without touching anything.
+            </p>
+            <p>
+                Focus and swap both cross monitors. Frame rectangles are absolute, so
+                the monitor to your right is simply where the windows further right are,
+                and a swapped window lands exactly where its neighbour was.
+            </p>
+            <p>
+                Two windows sharing a horizontal centre — the centre top and bottom
+                thirds, for instance — are not neighbours of each other. The comparison
+                is strictly horizontal, and there is no vertical navigation yet.
+            </p>
+
+            <h2 id="install">Install</h2>
+            <p>From a clone:</p>
+            <pre><code>just setup
+just install
+just enable</code></pre>
+            <p>
+                Log out and back in if the Shell does not pick it up.
+                <code>just prefs</code> opens the preferences window,
+                <code>just logs</code> follows the extension’s output, and
+                <code>just disable</code> turns it off again without uninstalling.
+            </p>
+
+            <h2 id="preferences">Preferences</h2>
+            <p>
+                The preferences window has two things in it: the gap between tiled
+                windows and at the screen edge, and every keyboard shortcut.
+            </p>
+            <p>
+                Assigning a shortcut that another Tiler action already holds clears it
+                from that action first. Leaving both set would not work: Mutter
+                registers whichever it sees first and refuses the other, so one of the
+                two would show as bound in the preferences window and quietly do
+                nothing.
+            </p>
+
+            <h2 id="architecture">Architecture</h2>
+            <p>
+                The code is split so that every decision is testable off the Shell. Each
+                module below imports nothing at all — not <code>gi://</code>, not
+                <code>resource:///</code> — so Vitest runs it directly on Node.
+            </p>
+            <div class="scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th scope="col">Module</th>
+                            <th scope="col">Owns</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>modules/zones.js</code></td>
+                            <td>
+                                The zone table, the projection to pixels, zone matching
+                                and cycling.
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><code>modules/windows.js</code></td>
+                            <td>
+                                Which windows may be placed and which may take focus.
+                                Worth isolating because getting one wrong is silent —
+                                the shortcut simply does nothing and no error is logged.
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><code>modules/neighbours.js</code></td>
+                            <td>
+                                Which window lies next to another in a given direction.
+                                Ties break on Mutter’s stable sequence, because
+                                <code>list_windows()</code> has no documented ordering.
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><code>modules/actions.js</code></td>
+                            <td>
+                                The single list of actions, shared with the preferences
+                                process. A test reads the gschema and fails if they
+                                drift.
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><code>modules/shortcuts.js</code></td>
+                            <td>
+                                The rules for assigning accelerators: what may be bound,
+                                what the capture dialog does about a keypress, and which
+                                action already holds a shortcut.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>
+                <code>modules/tiler.js</code> is the only file that touches Meta, Shell
+                or Main, and <code>prefs.js</code> the only one that touches Adw and
+                Gtk. Both read facts off the toolkit and act on them; the decisions
+                belong to the modules above.
+            </p>
+
+            <h2 id="testing">Testing</h2>
+            <p>
+                <code>modules/tiler.js</code> is unit-tested all the same.
+                <code>vitest.config.js</code> aliases the <code>gi://</code> and
+                <code>resource:///</code> specifiers to stubs in
+                <code>tests/stubs</code>, and <code>tests/support</code> models the
+                parts of Mutter the extension actually depends on — notably that a
+                maximized window reports the work area as its frame rect, and that
+                <code>allows_resize()</code> is false while a window is maximized. Every
+                bug fixed in that file has a regression test that fails without its fix.
+            </p>
+            <p>
+                <code>scripts/headless-check.sh</code> boots a throwaway Shell and
+                checks that the extension enables, disables and re-enables without
+                leaking a signal and without a JavaScript error. It presses no keys and
+                asserts no geometry: it is a lifetime check against a real Shell, where
+                the unit suite is what covers placement.
+            </p>
+            <div class="note">
+                <p>
+                    <strong>Why <code>prefs.js</code> has no coverage.</strong>
+                    Everything it used to decide now lives in
+                    <code>modules/shortcuts.js</code>. What is left is Adw and Gtk
+                    widget construction, which a unit test could only check against
+                    stubs of the toolkit — that tests the stubs, not the code.
+                </p>
+                <p>
+                    The exclusion is written into both <code>vitest.config.js</code> and
+                    <code>sonar-project.properties</code> so the two cannot disagree.
+                </p>
+            </div>
+
+            <h2 id="packaging">Packaging</h2>
+            <p>
+                A GNOME Shell extension ships as a plain ZIP with a required layout.
+                <code>metadata.json</code> must sit at the
+                <strong>archive root</strong>, never inside a nested folder, and the
+                file is conventionally named
+                <code>&lt;uuid&gt;.shell-extension.zip</code>. The required metadata
+                keys are <code>uuid</code>, <code>name</code>,
+                <code>description</code> and <code>shell-version</code>;
+                <code>version</code> is assigned by extensions.gnome.org when you
+                upload, and <code>version-name</code> is an optional string shown to
+                people.
+            </p>
+            <p>
+                GNOME ships an official packer,
+                <code>gnome-extensions pack</code>, which knows that layout and can
+                bundle a GSettings schema, translations and extra sources. Tiler does
+                not use it to build, because <code>gnome-extensions</code> lives in the
+                <code>gnome-shell</code> package and CI has no GNOME — depending on it
+                would pull the whole desktop onto every runner.
+                <code>just build</code> uses plain <code>zip</code> instead.
+            </p>
+            <p>
+                The official tool is kept as the authority anyway.
+                <code>just pack-check</code> runs it and compares its output against the
+                built zip, failing on any difference, so the hand-rolled archive cannot
+                drift from what GNOME itself would produce. It needs a real Shell, so it
+                runs locally as part of <code>just test-live</code>.
+            </p>
+
+            <h2 id="releasing">Releasing</h2>
+            <p>
+                Set <code>version-name</code> in <code>metadata.json</code> and
+                <code>version</code> in <code>package.json</code> to the new version,
+                commit, then tag and push:
+            </p>
+            <pre><code>git tag -a v0.1.0 -m 'release v0.1.0'
+git push origin v0.1.0</code></pre>
+            <p>
+                The tag drives everything. CI checks that it matches the version in both
+                files and stops before building if it does not — a release titled
+                <code>v0.2.0</code> containing a zip that tells GNOME it is
+                <code>0.1.0</code> is worse than no release. It then runs the full
+                suite, builds the zip and attaches it to a GitHub release. Run
+                <code>just test-live</code> before tagging, since neither the headless
+                check nor the packer check runs in CI.
+            </p>
+            <p>
+                Uploading to extensions.gnome.org can be scripted —
+                <code>gnome-extensions upload</code> takes <code>--user</code>,
+                <code>--password-file</code> and <code>--accept-tos</code>:
+            </p>
+            <pre><code>gnome-extensions upload --user YOU --password-file - \
+    tiler@napalm255.github.io.shell-extension.zip</code></pre>
+            <div class="note">
+                <p>
+                    It is deliberately not wired into the release workflow. It
+                    authenticates with your extensions.gnome.org account password rather
+                    than a scoped token, and that does not belong in CI secrets. Every
+                    upload goes to human review regardless, so automating it buys
+                    little.
+                </p>
+            </div>
+
+            <h2 id="development">Development</h2>
+            <pre><code>just            # list every recipe
+just fmt        # prettier and eslint --fix, in place
+just test       # unit suite, runs on Node in about a fifth of a second
+just coverage   # the same suite with a coverage report
+just lint       # eslint, prettier, gschema and shellcheck
+just security   # gitleaks, trivy, osv-scanner, actionlint, zizmor
+just build      # the installable zip
+just ci         # everything above — what CI runs
+just test-live  # headless Shell smoke test, then the packer check
+just docs       # serve this site locally
+just run        # nested Shell for trying things by hand
+just clean      # remove node_modules, coverage and build output</code></pre>
+            <p>
+                <code>mise.toml</code> pins every tool, so <code>just ci</code> behaves
+                the same locally and on a runner. <code>gjs</code>,
+                <code>glib-compile-schemas</code>, <code>gnome-shell</code> and
+                <code>gnome-extensions</code> come from the system rather than mise,
+                because they have to match the Shell you are targeting.
+            </p>
+        </main>
+
+        <footer>
+            <p>
+                Tiler is free software under the GPL-3.0-or-later.
+                <a href="https://github.com/napalm255/tiler"
+                    >Source and issues on GitHub</a
+                >.
+            </p>
+        </footer>
+    </body>
+</html>

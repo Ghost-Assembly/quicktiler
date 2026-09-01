@@ -39,9 +39,20 @@ test *args:
 coverage:
     npx vitest run --coverage
 
-# Smoke-test the extension in a headless gnome-shell
+# Both need a real Shell, so neither runs in CI.
+# Smoke-test in a headless gnome-shell and check the bundle layout
 test-live:
     ./scripts/headless-check.sh
+    ./scripts/pack-check.sh
+
+# Compare the built zip against what gnome-extensions pack produces
+pack-check: build
+    ./scripts/pack-check.sh
+
+# Serve the documentation site locally
+docs:
+    @echo "http://localhost:8000"
+    python3 -m http.server 8000 --directory docs
 
 # Full local security scan
 security:
@@ -51,8 +62,9 @@ security:
     actionlint
     zizmor .github/workflows/
 
-# Produce the installable zip. `ci` runs lint before this; a standalone
-# `just build` deliberately does not, so it stays quick to iterate with.
+# `ci` runs lint before this; a standalone `just build` deliberately does not,
+# so it stays quick to iterate with.
+# Produce the installable zip
 build:
     rm -f {{ uuid }}.shell-extension.zip
     zip -qr {{ uuid }}.shell-extension.zip {{ src }} -x 'schemas/gschemas.compiled'

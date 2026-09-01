@@ -63,9 +63,19 @@ gnome-shell --wayland --headless --virtual-monitor 3840x1600 >"$LOG" 2>&1 &
 SHELL_PID=$!
 # shellcheck disable=SC2317  # invoked via trap
 cleanup() {
+    # Captured first: this trap's own last command would otherwise become the
+    # script's exit status, which is how a run that printed PASS still exited 1.
+    local status=$?
+
     kill "$SHELL_PID" 2>/dev/null || true
     wait "$SHELL_PID" 2>/dev/null || true
-    rm -rf "$WORK"
+
+    # D-Bus activates gvfs inside the throwaway XDG_RUNTIME_DIR, and its fuse
+    # mount is not ours to unmount, so the directory may refuse to go. Leaving a
+    # few files in /tmp must not turn a passing check into a failing one.
+    rm -rf "$WORK" 2>/dev/null || true
+
+    return "$status"
 }
 trap cleanup EXIT
 

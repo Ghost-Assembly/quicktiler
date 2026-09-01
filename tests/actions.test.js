@@ -8,6 +8,8 @@ import { ACTIONS, ACTION_KEYS } from '../modules/actions.js';
 const SCHEMA = fileURLToPath(
     new URL('../schemas/org.gnome.shell.extensions.tiler.gschema.xml', import.meta.url),
 );
+const README = fileURLToPath(new URL('../README.md', import.meta.url));
+const DOCS = fileURLToPath(new URL('../docs/index.html', import.meta.url));
 
 /**
  * Every keybinding key the gschema declares.
@@ -57,5 +59,141 @@ describe('ACTIONS', () => {
     it('is frozen, so no caller can reorder or extend it', () => {
         expect(Object.isFrozen(ACTIONS)).toBe(true);
         expect(ACTIONS.every(action => Object.isFrozen(action))).toBe(true);
+    });
+});
+
+/**
+ * Read a file the tests own, by absolute path.
+ *
+ * @param {string} path Absolute path.
+ * @returns {string} File contents.
+ */
+function read(path) {
+    // Each path is a module-relative constant resolved from import.meta.url, not
+    // input of any kind; the rule cannot see that it is not a variable path.
+    // eslint-disable-next-line security/detect-non-literal-fs-filename
+    return readFileSync(path, 'utf8');
+}
+
+/**
+ * The accelerator each action defaults to, from the gschema.
+ *
+ * @returns {Map<string, string>} Schema key to accelerator, e.g. '<Super>bracketleft'.
+ */
+function schemaDefaults() {
+    const xml = read(SCHEMA);
+    const pattern =
+        /<key\s+type="as"\s+name="([^"]+)">\s*<default><!\[CDATA\[\['([^']+)'\]\]\]><\/default>/g;
+
+    return new Map([...xml.matchAll(pattern)].map(m => [m[1], m[2]]));
+}
+
+/**
+ * Turn a gschema accelerator into the pieces documentation spells out.
+ *
+ * '<Super><Control><Shift>m' becomes ['super', 'ctrl', 'shift', 'm'], so the
+ * comparison does not care whether prose writes Ctrl or Control, or which order
+ * the modifiers appear in.
+ *
+ * @param {string} accelerator Accelerator in gschema form.
+ * @returns {string[]} Lower-case parts, sorted.
+ */
+function parts(accelerator) {
+    const named = new Map([
+        ['control', 'ctrl'],
+        ['bracketleft', '['],
+        ['bracketright', ']'],
+        ['left', '\u2190'],
+        ['right', '\u2192'],
+        ['up', '\u2191'],
+        ['down', '\u2193'],
+    ]);
+    const raw = [...accelerator.matchAll(/<([^>]+)>/g)].map(m => m[1]);
+    const key = accelerator.replace(/<[^>]+>/g, '');
+
+    return [...raw, key]
+        .map(part => part.toLowerCase())
+        .map(part => named.get(part) ?? part)
+        .sort();
+}
+
+/** Parts that are modifiers rather than a key in their own right. */
+const MODIFIERS = new Set(['super', 'ctrl', 'control', 'shift', 'alt']);
+
+/**
+ * Every shortcut documented in a file, as sorted parts.
+ *
+ * Scans the <kbd> elements in order and groups any that are joined by a literal
+ * "+", which works for both the README's markdown tables and the docs site's
+ * HTML ones. Groups are collected by walking the matches rather than with one
+ * regex spanning the whole run, which would need a nested quantifier.
+ *
+ * The tag pattern tolerates whitespace inside the angle brackets, because
+ * Prettier wraps long lines there — `<kbd\n    >M</kbd\n>` is the same element
+ * and must not be missed.
+ *
+ * Groups that are entirely modifiers are dropped: prose like "Super+Ctrl moves
+ * windows" describes a convention, not a shortcut.
+ *
+ * @param {string} text File contents.
+ * @returns {string[][]} One entry per documented shortcut, each sorted.
+ */
+function documented(text) {
+    const groups = [];
+    let current = null;
+    let previousEnd = -1;
+
+    for (const match of text.matchAll(/<kbd\s*>([^<]*)<\/kbd\s*>/g)) {
+        const joined =
+            current !== null && /^\s*\+\s*$/.test(text.slice(previousEnd, match.index));
+
+        if (joined) current.push(match[1]);
+        else groups.push((current = [match[1]]));
+
+        previousEnd = match.index + match[0].length;
+    }
+
+    return groups
+        .map(group => group.map(part => part.trim().toLowerCase()))
+        .filter(group => group.some(part => !MODIFIERS.has(part)))
+        .map(group => group.map(part => (part === 'control' ? 'ctrl' : part)).sort());
+}
+
+describe('documented shortcuts', () => {
+    const defaults = [...schemaDefaults().values()].map(parts);
+
+    /**
+     * @param {string[]} shortcut Sorted parts.
+     * @returns {boolean} Whether the schema defaults contain it.
+     */
+    const isDefault = shortcut =>
+        defaults.some(other => other.join('+') === shortcut.join('+'));
+
+    it('finds a keybinding default for every action in the schema', () => {
+        // Guards the parser: without this, an unmatched regex would let the
+        // comparisons below pass by comparing two empty lists.
+        expect(schemaDefaults().size).toBe(ACTION_KEYS.length);
+    });
+
+    it.each([
+        ['README.md', README],
+        ['docs/index.html', DOCS],
+    ])('finds shortcuts documented in %s', (_name, path) => {
+        expect(documented(read(path)).length).toBeGreaterThanOrEqual(
+            ACTION_KEYS.length,
+        );
+    });
+
+    // The tables exist in two places because a GitHub visitor wants them without
+    // leaving the repo. That duplication is only safe while something checks it.
+    it.each([
+        ['README.md', README],
+        ['docs/index.html', DOCS],
+    ])('documents only shortcuts the schema actually sets, in %s', (_name, path) => {
+        const wrong = documented(read(path))
+            .filter(shortcut => !isDefault(shortcut))
+            .map(shortcut => shortcut.join('+'));
+
+        expect(wrong).toEqual([]);
     });
 });
