@@ -1,6 +1,7 @@
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
-uuid := "tiler@napalm255.github.io"
+# Derived, so metadata.json is the only place the uuid is written down.
+uuid := shell("jq -r .uuid metadata.json")
 install_dir := env_var('HOME') / ".local/share/gnome-shell/extensions" / uuid
 src := "metadata.json extension.js prefs.js modules schemas"
 

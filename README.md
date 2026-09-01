@@ -67,25 +67,32 @@ just enable
 ```
 
 Log out and back in if the Shell does not pick it up. `just prefs` opens the
-preferences window and `just logs` follows the extension's output.
+preferences window, `just logs` follows the extension's output, and
+`just disable` turns it off again without uninstalling.
 
 ## Develop
 
 ```
 just            # list every recipe
-just test       # unit suite, runs on Node in about a tenth of a second
+just fmt        # prettier and eslint --fix, in place
+just test       # unit suite, runs on Node in about a fifth of a second
+just coverage   # the same suite with a coverage report
 just lint       # eslint, prettier, gschema and shellcheck
 just security   # gitleaks, trivy, osv-scanner, actionlint, zizmor
-just ci         # everything above, plus the build — what CI runs
+just build      # the installable zip
+just ci         # everything above — what CI runs
 just test-live  # boot a throwaway headless Shell and smoke-test it
 just run        # nested Shell for trying things by hand
+just clean      # remove node_modules, coverage and build output
 ```
 
 `mise.toml` pins every tool, so `just ci` behaves the same locally and on a
 runner. `gjs`, `glib-compile-schemas` and `gnome-shell` come from the system
 rather than mise, because they have to match the Shell you are targeting.
 
-The code is split so that the interesting half is testable off the Shell:
+The code is split so that every decision is testable off the Shell. Each
+module below imports nothing at all — not `gi://`, not `resource:///` — so
+Vitest runs it directly on Node:
 
 - `modules/zones.js` imports nothing at all — the zone table, the projection to
   pixels, the zone matching and the cycling. Vitest runs it directly on Node.
@@ -96,30 +103,54 @@ The code is split so that the interesting half is testable off the Shell:
   in a given direction. Extracted from the Shell layer because it was the one
   piece of real arithmetic left there, and getting it wrong is quiet: focus
   moves somewhere unexpected, or nowhere, and nothing is logged.
-- `modules/actions.js` imports nothing — the single list of actions, shared with
-  the preferences process so the two cannot drift apart. A test reads the
-  gschema and fails if they do.
-- `modules/tiler.js` is the only file that touches Meta, Shell or Main. It reads
-  facts off Mutter and calls it; every decision is delegated to the files
-  above.
+- `modules/actions.js` — the single list of actions, shared with the preferences
+  process so the two cannot drift apart. A test reads the gschema and fails if
+  they do.
+- `modules/shortcuts.js` — the rules for assigning accelerators: which
+  combinations may be bound, what the capture dialog should do about a keypress,
+  and which other action already holds a shortcut. The Gdk and Gtk values are
+  passed in by `prefs.js` rather than imported, which is what keeps this file
+  runnable on Node.
+
+`modules/tiler.js` is the only file that touches Meta, Shell or Main, and
+`prefs.js` the only one that touches Adw and Gtk. Both read facts off the
+toolkit and act on them; the decisions belong to the modules above.
+
+`tiler.js` is unit-tested all the same. `vitest.config.js` aliases the `gi://`
+and `resource:///` specifiers to stubs in `tests/stubs`, and `tests/support`
+models the parts of Mutter the extension actually depends on — notably that a
+maximized window reports the work area as its frame rect, and that
+`allows_resize()` is false while a window is maximized. Every bug fixed in that
+file has a regression test that fails without its fix.
+
+`prefs.js` is the one file with no coverage, and deliberately: everything it
+used to decide now lives in `modules/shortcuts.js`. What is left is widget
+construction, which a unit test could only check against stubs of Adw and Gtk —
+that tests the stubs. The exclusion is written into both `vitest.config.js` and
+`sonar-project.properties` so the two cannot disagree.
 
 `scripts/headless-check.sh` boots a throwaway Shell and checks that the
 extension enables, disables and re-enables without leaking a signal and without
-a JavaScript error. It presses no keys and asserts no geometry, so it is a
-lifetime check rather than evidence that any placement is correct.
+a JavaScript error. It presses no keys and asserts no geometry: it is a lifetime
+check against a real Shell, where the unit suite is what covers placement.
 
 ## Releasing
 
-Tag and push:
+Set `version-name` in `metadata.json` and `version` in `package.json` to the new
+version, commit, then tag and push:
 
 ```
 git tag -a v0.1.0 -m 'release v0.1.0'
 git push origin v0.1.0
 ```
 
-CI builds the zip, runs the full suite and attaches the artifact to a GitHub
-release. Uploading to extensions.gnome.org stays manual — it needs a browser
-login and has no API.
+The tag drives everything. CI checks that it matches the version in both files
+and stops before building if it does not — a release titled `v0.2.0` containing
+a zip that tells GNOME it is `0.1.0` is worse than no release. It then runs the
+full suite, builds the zip and attaches it to a GitHub release.
+
+Uploading to extensions.gnome.org stays manual: it needs a browser login and has
+no API.
 
 ## Licence
 
