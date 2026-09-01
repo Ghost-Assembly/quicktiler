@@ -340,8 +340,17 @@ git push origin v0.1.0</code></pre>
                 <code>gnome-extensions upload</code> takes <code>--user</code>,
                 <code>--password-file</code> and <code>--accept-tos</code>:
             </p>
+            <!--
+                The bundle filename contains an @ and looks enough like an
+                address that Cloudflare's email obfuscation rewrites it to
+                "[email protected]" and makes the command uncopyable. These
+                comments are Cloudflare's documented opt-out; every other reader
+                and tool ignores them.
+            -->
+            <!--email_off-->
             <pre><code>gnome-extensions upload --user YOU --password-file - \
     tiler@napalm255.github.io.shell-extension.zip</code></pre>
+            <!--/email_off-->
             <div class="note">
                 <p>
                     It is deliberately not wired into the release workflow. It
