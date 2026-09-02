@@ -168,6 +168,28 @@
             </p>
 
             <h2 id="install">Install</h2>
+            <p>
+                Needs GNOME 49 or newer. From the latest release, with no clone and no
+                toolchain — <code>gnome-extensions</code> ships with GNOME Shell itself:
+            </p>
+            <!--
+                The bundle filename and the uuid both contain an @ and look
+                enough like addresses that Cloudflare's email obfuscation
+                rewrites them; these comments are its documented opt-out. See
+                the same wrapping around the upload command under Releasing.
+            -->
+            <!--email_off-->
+            <pre><code>curl -LO 'https://github.com/napalm255/tiler/releases/latest/download/tiler@napalm255.github.io.shell-extension.zip'
+gnome-extensions install --force 'tiler@napalm255.github.io.shell-extension.zip'</code></pre>
+            <!--/email_off-->
+            <p>
+                That unpacks the extension and compiles its settings schema, so there is
+                no separate <code>glib-compile-schemas</code> step. Log out and back in
+                — Wayland cannot reload the Shell in place — then turn it on:
+            </p>
+            <!--email_off-->
+            <pre><code>gnome-extensions enable tiler@napalm255.github.io</code></pre>
+            <!--/email_off-->
             <p>From a clone:</p>
             <pre><code>just setup
 just install

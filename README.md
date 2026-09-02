@@ -47,6 +47,22 @@ Change any of them, and the gap between windows, in the preferences window.
 
 ## Install
 
+Needs GNOME 49 or newer. From the latest release, with no clone and no
+toolchain — `gnome-extensions` ships with GNOME Shell itself:
+
+```
+curl -LO 'https://github.com/napalm255/tiler/releases/latest/download/tiler@napalm255.github.io.shell-extension.zip'
+gnome-extensions install --force 'tiler@napalm255.github.io.shell-extension.zip'
+```
+
+That unpacks the extension and compiles its settings schema, so there is no
+separate `glib-compile-schemas` step. Log out and back in — Wayland cannot
+reload the Shell in place — then turn it on:
+
+```
+gnome-extensions enable tiler@napalm255.github.io
+```
+
 From a clone:
 
 ```
