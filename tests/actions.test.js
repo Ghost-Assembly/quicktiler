@@ -6,7 +6,10 @@ import { describe, expect, it } from 'vitest';
 import { ACTIONS, ACTION_KEYS } from '../modules/actions.js';
 
 const SCHEMA = fileURLToPath(
-    new URL('../schemas/org.gnome.shell.extensions.tiler.gschema.xml', import.meta.url),
+    new URL(
+        '../schemas/org.gnome.shell.extensions.quicktiler.gschema.xml',
+        import.meta.url,
+    ),
 );
 const README = fileURLToPath(new URL('../README.md', import.meta.url));
 const DOCS = fileURLToPath(new URL('../docs/index.html', import.meta.url));

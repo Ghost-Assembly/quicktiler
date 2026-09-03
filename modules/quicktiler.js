@@ -1,4 +1,4 @@
-// Shell layer: the only file in Tiler that touches Meta, Shell or Main.
+// Shell layer: the only file in QuickTiler that touches Meta, Shell or Main.
 //
 // Everything here needs a live gnome-shell, so none of it is unit-testable off
 // the Shell. That is why it is kept thin and free of branching logic: geometry
@@ -68,7 +68,7 @@ function describe(window) {
 }
 
 /** Places windows into zones in response to keybindings. */
-export class Tiler {
+export class QuickTiler {
     /**
      * @param {Gio.Settings} settings The extension's settings, which also hold
      *   the keybinding arrays.
@@ -108,7 +108,9 @@ export class Tiler {
             );
 
             if (action === Meta.KeyBindingAction.NONE) {
-                console.warn(`[tiler] could not bind ${key}; is it already in use?`);
+                console.warn(
+                    `[quicktiler] could not bind ${key}; is it already in use?`,
+                );
                 return;
             }
 
@@ -139,7 +141,7 @@ export class Tiler {
             // nothing off-Shell can check this map, so say so loudly rather than
             // leaving a shortcut that is configurable and silently inert.
             if (!handler) {
-                console.warn(`[tiler] no handler for action ${key}`);
+                console.warn(`[quicktiler] no handler for action ${key}`);
                 continue;
             }
 

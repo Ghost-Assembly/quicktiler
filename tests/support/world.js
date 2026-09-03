@@ -1,5 +1,5 @@
 // A fake Mutter world: windows, a workspace and monitors, behaving closely
-// enough for modules/tiler.js to be driven end to end.
+// enough for modules/quicktiler.js to be driven end to end.
 //
 // The fakes model the two Mutter behaviours the extension actually depends on
 // and that its bugs came from: a maximized window reports the whole work area
@@ -155,7 +155,7 @@ export class FakeWorkspace {
 
 /**
  * Build a workspace, register its monitors with the fake Main, and set the
- * global.display that modules/tiler.js reads the focused window from.
+ * global.display that modules/quicktiler.js reads the focused window from.
  *
  * @param {Array<object>} [workAreas] One work area per monitor.
  * @returns {{workspace: FakeWorkspace, focus: (window: object|null) => void}} World.

@@ -94,7 +94,7 @@ prefs:
 
 # Follow the extension's log output
 logs:
-    journalctl -f -o cat /usr/bin/gnome-shell | grep -i --line-buffered "tiler"
+    journalctl -f -o cat /usr/bin/gnome-shell | grep -i --line-buffered "quicktiler"
 
 # Remove build output
 [confirm("remove node_modules, coverage, the zip and compiled schemas?")]

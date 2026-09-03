@@ -1,12 +1,12 @@
-// Pure window policy: which windows Tiler may place, and which it may focus.
+// Pure window policy: which windows QuickTiler may place, and which it may focus.
 //
 // Like modules/zones.js this file imports nothing, so it is unit-tested on Node.
-// The rules live here rather than inline in modules/tiler.js because getting one
+// The rules live here rather than inline in modules/quicktiler.js because getting one
 // of them wrong is silent — the keybinding simply does nothing, with no error in
 // the log to notice.
 //
 // Callers pass a plain description of the window rather than a Meta.Window;
-// modules/tiler.js is responsible for reading those facts off Mutter.
+// modules/quicktiler.js is responsible for reading those facts off Mutter.
 //
 // @typedef {object} WindowFacts
 // @property {boolean} normal Window type is NORMAL.
@@ -18,7 +18,7 @@
 // @property {boolean} allowsResize Mutter permits resizing the window *right now*.
 
 /**
- * Whether Tiler may move and resize a window.
+ * Whether QuickTiler may move and resize a window.
  *
  * The maximized case is the subtle one. Mutter's `meta_window_allows_resize()`
  * is defined as `has_resize_func && !maximized && !fullscreen && ...`, so it
@@ -44,7 +44,7 @@ export function isPlaceable(window) {
 }
 
 /**
- * Whether Tiler may move focus to or from a window.
+ * Whether QuickTiler may move focus to or from a window.
  *
  * Deliberately weaker than {@link isPlaceable}: moving focus resizes nothing, so
  * it must not inherit the placement rules. Sharing one predicate would make it
@@ -62,7 +62,7 @@ export function isFocusable(window) {
  * The rules both predicates share: a real, ordinary, user-visible window.
  *
  * @param {WindowFacts|null} window Window description.
- * @returns {boolean} True if the window is one Tiler should consider at all.
+ * @returns {boolean} True if the window is one QuickTiler should consider at all.
  */
 function isManageable(window) {
     return !!window && window.normal && !window.overrideRedirect && !window.skipTaskbar;

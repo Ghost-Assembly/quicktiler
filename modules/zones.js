@@ -1,9 +1,9 @@
-// Pure geometry for Tiler's zone set.
+// Pure geometry for QuickTiler's zone set.
 //
 // This file imports nothing — not gi://, not resource:///. That is deliberate
-// and load-bearing: it lets the whole of Tiler's branching logic be unit-tested
+// and load-bearing: it lets the whole of QuickTiler's branching logic be unit-tested
 // with Vitest on plain Node, with no gnome-shell in the loop. Everything that
-// needs Meta, Shell or St belongs in modules/tiler.js instead.
+// needs Meta, Shell or St belongs in modules/quicktiler.js instead.
 
 /**
  * The zone table, as fractions of a monitor's work area.
@@ -110,7 +110,7 @@ export const MATCH_TOLERANCE = 8;
 /**
  * Identify which zone a window currently occupies.
  *
- * This is what makes Tiler stateless: the current zone is read back from the
+ * This is what makes QuickTiler stateless: the current zone is read back from the
  * window's own geometry on every keypress, so cycling works on windows that
  * were placed by something else, and there is no per-window table to leak or go
  * stale.

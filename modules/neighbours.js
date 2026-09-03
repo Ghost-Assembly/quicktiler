@@ -3,7 +3,7 @@
 // This file imports nothing — not gi://, not resource:/// — like modules/zones.js
 // and modules/windows.js, so Vitest runs it on plain Node.
 //
-// It lives here rather than inline in modules/tiler.js because it is the one
+// It lives here rather than inline in modules/quicktiler.js because it is the one
 // piece of real arithmetic the Shell layer had left, and it decides where focus
 // goes and which two windows a swap exchanges. Getting it wrong is quiet: the
 // shortcut moves focus somewhere unexpected, or nowhere, and logs nothing.
@@ -27,7 +27,7 @@ function centreX(rect) {
  * Candidates whose centre coincides with the origin's are not reachable: the
  * comparison is strictly to one side, so two windows stacked in the same zone —
  * `center-top` above `center-bottom`, say — are not neighbours of each other in
- * this axis. Moving between those needs a vertical axis, which Tiler does not
+ * this axis. Moving between those needs a vertical axis, which QuickTiler does not
  * bind yet.
  *
  * Ties are broken on `seq`, not on the order candidates arrive in. Mutter's

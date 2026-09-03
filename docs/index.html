@@ -3,10 +3,10 @@
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>Tiler — keyboard-driven zone tiling for GNOME Shell</title>
+        <title>QuickTiler — keyboard-driven zone tiling for GNOME Shell</title>
         <meta
             name="description"
-            content="Documentation for Tiler, a keyboard-driven zone tiling extension for GNOME Shell: zones, shortcuts, architecture, testing and releasing."
+            content="Documentation for QuickTiler, a keyboard-driven zone tiling extension for GNOME Shell: zones, shortcuts, architecture, testing and releasing."
         />
         <link rel="stylesheet" href="style.css" />
     </head>
@@ -14,10 +14,10 @@
         <a class="skip" href="#main">Skip to content</a>
 
         <header>
-            <h1>Tiler</h1>
+            <h1>QuickTiler</h1>
             <p class="tagline">Keyboard-driven zone tiling for GNOME Shell.</p>
             <p class="repo-link">
-                <a href="https://github.com/napalm255/tiler">Source on GitHub</a>
+                <a href="https://github.com/napalm255/quicktiler">Source on GitHub</a>
             </p>
             <nav aria-label="Contents">
                 <ul class="toc">
@@ -46,8 +46,8 @@
             <p>
                 Both common ultrawide layouts — <code>1/4 + 1/2 + 1/4</code> and
                 <code>1/2 + 1/2</code> — are span-merges of the same four-column grid,
-                so Tiler has no notion of a “current layout” to switch between. It has
-                one flat list of zones and three cycles.
+                so QuickTiler has no notion of a “current layout” to switch between. It
+                has one flat list of zones and three cycles.
             </p>
             <div class="scroll">
                 <table>
@@ -179,8 +179,8 @@
                 the same wrapping around the upload command under Releasing.
             -->
             <!--email_off-->
-            <pre><code>curl -LO 'https://github.com/napalm255/tiler/releases/latest/download/tiler@napalm255.github.io.shell-extension.zip'
-gnome-extensions install --force 'tiler@napalm255.github.io.shell-extension.zip'</code></pre>
+            <pre><code>curl -LO 'https://github.com/napalm255/quicktiler/releases/latest/download/quicktiler@napalm255.github.io.shell-extension.zip'
+gnome-extensions install --force 'quicktiler@napalm255.github.io.shell-extension.zip'</code></pre>
             <!--/email_off-->
             <p>
                 That unpacks the extension and compiles its settings schema, so there is
@@ -188,7 +188,7 @@ gnome-extensions install --force 'tiler@napalm255.github.io.shell-extension.zip'
                 — Wayland cannot reload the Shell in place — then turn it on:
             </p>
             <!--email_off-->
-            <pre><code>gnome-extensions enable tiler@napalm255.github.io</code></pre>
+            <pre><code>gnome-extensions enable quicktiler@napalm255.github.io</code></pre>
             <!--/email_off-->
             <p>From a clone:</p>
             <pre><code>just setup
@@ -201,14 +201,30 @@ just enable</code></pre>
                 <code>just disable</code> turns it off again without uninstalling.
             </p>
 
+            <h3 id="upgrading">Upgrading from Tiler 0.1.0</h3>
+            <p>
+                QuickTiler was called Tiler up to 0.1.0, and the rename changed the
+                extension’s uuid. GNOME identifies an extension by that uuid, so 0.2.0
+                installs alongside the old one rather than replacing it, and both try to
+                claim the same shortcuts — only one of them can. Remove the old one
+                first:
+            </p>
+            <!--email_off-->
+            <pre><code>gnome-extensions uninstall tiler@napalm255.github.io</code></pre>
+            <!--/email_off-->
+            <p>
+                The gap and shortcut settings do not carry over; they live under the old
+                schema path and are set again in the preferences window.
+            </p>
+
             <h2 id="preferences">Preferences</h2>
             <p>
                 The preferences window has two things in it: the gap between tiled
                 windows and at the screen edge, and every keyboard shortcut.
             </p>
             <p>
-                Assigning a shortcut that another Tiler action already holds clears it
-                from that action first. Leaving both set would not work: Mutter
+                Assigning a shortcut that another QuickTiler action already holds clears
+                it from that action first. Leaving both set would not work: Mutter
                 registers whichever it sees first and refuses the other, so one of the
                 two would show as bound in the preferences window and quietly do
                 nothing.
@@ -272,15 +288,15 @@ just enable</code></pre>
                 </table>
             </div>
             <p>
-                <code>modules/tiler.js</code> is the only file that touches Meta, Shell
-                or Main, and <code>prefs.js</code> the only one that touches Adw and
-                Gtk. Both read facts off the toolkit and act on them; the decisions
+                <code>modules/quicktiler.js</code> is the only file that touches Meta,
+                Shell or Main, and <code>prefs.js</code> the only one that touches Adw
+                and Gtk. Both read facts off the toolkit and act on them; the decisions
                 belong to the modules above.
             </p>
 
             <h2 id="testing">Testing</h2>
             <p>
-                <code>modules/tiler.js</code> is unit-tested all the same.
+                <code>modules/quicktiler.js</code> is unit-tested all the same.
                 <code>vitest.config.js</code> aliases the <code>gi://</code> and
                 <code>resource:///</code> specifiers to stubs in
                 <code>tests/stubs</code>, and <code>tests/support</code> models the
@@ -326,10 +342,10 @@ just enable</code></pre>
             <p>
                 GNOME ships an official packer,
                 <code>gnome-extensions pack</code>, which knows that layout and can
-                bundle a GSettings schema, translations and extra sources. Tiler does
-                not use it to build, because <code>gnome-extensions</code> lives in the
-                <code>gnome-shell</code> package and CI has no GNOME — depending on it
-                would pull the whole desktop onto every runner.
+                bundle a GSettings schema, translations and extra sources. QuickTiler
+                does not use it to build, because <code>gnome-extensions</code> lives in
+                the <code>gnome-shell</code> package and CI has no GNOME — depending on
+                it would pull the whole desktop onto every runner.
                 <code>just build</code> uses plain <code>zip</code> instead.
             </p>
             <p>
@@ -371,7 +387,7 @@ git push origin v0.1.0</code></pre>
             -->
             <!--email_off-->
             <pre><code>gnome-extensions upload --user YOU --password-file - \
-    tiler@napalm255.github.io.shell-extension.zip</code></pre>
+    quicktiler@napalm255.github.io.shell-extension.zip</code></pre>
             <!--/email_off-->
             <div class="note">
                 <p>
@@ -407,8 +423,8 @@ just clean      # remove node_modules, coverage and build output</code></pre>
 
         <footer>
             <p>
-                Tiler is free software under the GPL-3.0-or-later.
-                <a href="https://github.com/napalm255/tiler"
+                QuickTiler is free software under the GPL-3.0-or-later.
+                <a href="https://github.com/napalm255/quicktiler"
                     >Source and issues on GitHub</a
                 >.
             </p>

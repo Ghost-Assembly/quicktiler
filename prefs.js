@@ -1,5 +1,5 @@
 // Preferences. Runs in its own process, with no access to gnome-shell's
-// resource:// modules — so nothing here may import from modules/tiler.js.
+// resource:// modules — so nothing here may import from modules/quicktiler.js.
 
 import Adw from 'gi://Adw';
 import Gdk from 'gi://Gdk';
@@ -14,7 +14,7 @@ import {
 
 // modules/actions.js imports nothing, so it is safe to pull into this process,
 // which has no access to gnome-shell's resource:// modules. Sharing it is what
-// stops the action list here from drifting away from the one tiler.js binds.
+// stops the action list here from drifting away from the one quicktiler.js binds.
 import { ACTIONS } from './modules/actions.js';
 import {
     CAPTURE_ASSIGN,
@@ -40,7 +40,7 @@ const GTK_BINDING = {
 };
 
 const ShortcutRow = GObject.registerClass(
-    class TilerShortcutRow extends Adw.ActionRow {
+    class QuickTilerShortcutRow extends Adw.ActionRow {
         /**
          * @param {Gio.Settings} settings Extension settings.
          * @param {string} key Schema key holding the binding.
@@ -139,7 +139,7 @@ const ShortcutRow = GObject.registerClass(
     },
 );
 
-export default class TilerPreferences extends ExtensionPreferences {
+export default class QuickTilerPreferences extends ExtensionPreferences {
     /**
      * @param {Adw.PreferencesWindow} window Window to populate.
      */
