@@ -112,9 +112,17 @@ export function parseAccelerator(accelerator) {
     const known = MODIFIER_ORDER.filter(modifier => seen.has(modifier));
     const unknown = [...seen].filter(token => !MODIFIER_LABELS.has(token));
 
+    // The key is whatever follows the last modifier, rather than the string
+    // with every <...> removed. It says what an accelerator actually is —
+    // modifiers, then one key — and it is exact: a key name never contains
+    // '>', because Gdk calls that one 'greater'. Stripping angle brackets
+    // instead reads as an attempt to sanitise markup, which is also how CodeQL
+    // reads it.
+    const lastModifier = accelerator.lastIndexOf('>');
+
     return {
         modifiers: [...known, ...unknown],
-        key: accelerator.replace(/<[^<>]+>/g, '').toLowerCase(),
+        key: accelerator.slice(lastModifier + 1).toLowerCase(),
     };
 }
 
