@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" height="16px" width="16px" viewBox="0 0 16 16">
+    <!--
+        The zone set, drawn: a half on the left, two quarters stacked on the
+        right. That is the 1/2 + 1/4 + 1/4 layout from modules/zones.js, which
+        is what the extension is for.
+
+        The comment sits inside the svg element deliberately. A comment before
+        the opening tag defeats gdk-pixbuf's format sniffing, and the icon then
+        fails to load with "couldn't recognize the image file format" — which
+        renders as no icon at all, with nothing in the log to say why.
+        scripts/icon-check.js exists because that happened.
+
+        fill="#222222" on a group is Adwaita's own convention; gnome-shell
+        recolours a *-symbolic.svg from the theme, so nothing here may depend
+        on the colour actually being this one.
+    -->
+    <g fill="#222222">
+        <rect x="1" y="2" width="6.2" height="12" rx="0.8"/>
+        <rect x="8.8" y="2" width="6.2" height="5.2" rx="0.8"/>
+        <rect x="8.8" y="8.8" width="6.2" height="5.2" rx="0.8"/>
+    </g>
+</svg>

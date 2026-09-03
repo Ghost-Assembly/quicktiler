@@ -15,7 +15,10 @@
 
         <header>
             <h1>QuickTiler</h1>
-            <p class="tagline">Keyboard-driven zone tiling for GNOME Shell.</p>
+            <p class="tagline">
+                Keyboard-driven zone tiling for GNOME Shell, with a quick settings tile
+                that lists every shortcut.
+            </p>
             <p class="repo-link">
                 <a href="https://github.com/napalm255/quicktiler">Source on GitHub</a>
             </p>
@@ -24,6 +27,7 @@
                     <li><a href="#zones">Zones</a></li>
                     <li><a href="#shortcuts">Shortcuts</a></li>
                     <li><a href="#install">Install</a></li>
+                    <li><a href="#quick-settings">Quick settings</a></li>
                     <li><a href="#preferences">Preferences</a></li>
                     <li><a href="#architecture">Architecture</a></li>
                     <li><a href="#testing">Testing</a></li>
@@ -217,10 +221,56 @@ just enable</code></pre>
                 schema path and are set again in the preferences window.
             </p>
 
+            <h2 id="quick-settings">Quick settings</h2>
+            <p>
+                The tile sits in the system menu, under the same panel as the volume and
+                network controls. It is a
+                <code>QuickSettings.SystemIndicator</code> holding one
+                <code>QuickMenuToggle</code>, added through
+                <code>addExternalIndicator()</code> so the Shell places it relative to
+                brightness and background apps. There is deliberately no permanent top
+                bar icon: one that never changes is noise, and this extension has no
+                status to report between keypresses.
+            </p>
+            <p>
+                Clicking the tile pauses the keyboard shortcuts. Every accelerator is
+                released, so it goes back to whatever else claims it, and clicking again
+                takes them back. The menu header says which state it is in.
+            </p>
+            <p>
+                Clicking the arrow opens the menu: the four groups of actions — tile,
+                focus, swap and monitor — each row showing the shortcut it currently
+                holds and acting on the focused window when clicked. The tile teaches
+                the keyboard rather than replacing it. Rows keep working while the
+                shortcuts are paused, because the pause is about the keyboard only.
+            </p>
+            <div class="note">
+                <p>
+                    <strong>Why a row does not read the focused window.</strong> Opening
+                    the menu takes a Clutter grab, and Mutter's focus window can be null
+                    for as long as it is held. A row that read the display at click time
+                    could act on nothing at all, with nothing logged to say so, so
+                    <code>modules/panel.js</code> tracks the last window it saw focused
+                    and passes it to <code>QuickTiler.run()</code>. The window still
+                    goes through the same policy checks as a focused one, so a window
+                    that has since closed is rejected exactly as one that was never
+                    eligible.
+                </p>
+            </div>
+
             <h2 id="preferences">Preferences</h2>
             <p>
-                The preferences window has two things in it: the gap between tiled
-                windows and at the screen edge, and every keyboard shortcut.
+                The preferences window has four things in it: whether the quick settings
+                tile is shown, whether the keyboard shortcuts are registered at all, the
+                gap between tiled windows and at the screen edge, and every shortcut
+                itself.
+            </p>
+            <p>
+                The shortcuts switch is the same pause the tile writes. It is here as
+                well as on the tile because it has to be: with the tile hidden there is
+                no tile to click, and this is the only way back. Turning the tile off
+                builds no actor at all, which is what lets the extension go back to
+                costing nothing between keypresses.
             </p>
             <p>
                 Assigning a shortcut that another QuickTiler action already holds clears
@@ -284,19 +334,40 @@ just enable</code></pre>
                                 action already holds a shortcut.
                             </td>
                         </tr>
+                        <tr>
+                            <td><code>modules/accelerator.js</code></td>
+                            <td>
+                                How a shortcut is spelled for a reader —
+                                <code>&lt;Super&gt;&lt;Control&gt;Left</code> becomes
+                                <code>Super+Ctrl+←</code>. The Shell has no Gtk, so
+                                <code>Gtk.accelerator_get_label</code> is unavailable to
+                                the menu and the text is worked out here. The same
+                                module is what the tests compare this site against.
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><code>modules/settings.js</code></td>
+                            <td>
+                                The names of the settings that are not keybindings,
+                                written once rather than as string literals in the three
+                                files that read and write them.
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
             <p>
-                <code>modules/quicktiler.js</code> is the only file that touches Meta,
-                Shell or Main, and <code>prefs.js</code> the only one that touches Adw
-                and Gtk. Both read facts off the toolkit and act on them; the decisions
-                belong to the modules above.
+                <code>modules/quicktiler.js</code> is the only file that touches Meta or
+                Shell, <code>modules/panel.js</code> the only one that touches St,
+                Clutter, PopupMenu or QuickSettings, and <code>prefs.js</code> the only
+                one that touches Adw and Gtk. All three read facts off the toolkit and
+                act on them; the decisions belong to the modules above.
             </p>
 
             <h2 id="testing">Testing</h2>
             <p>
-                <code>modules/quicktiler.js</code> is unit-tested all the same.
+                <code>modules/quicktiler.js</code> and <code>modules/panel.js</code>
+                are unit-tested all the same.
                 <code>vitest.config.js</code> aliases the <code>gi://</code> and
                 <code>resource:///</code> specifiers to stubs in
                 <code>tests/stubs</code>, and <code>tests/support</code> models the
@@ -355,6 +426,21 @@ just enable</code></pre>
                 drift from what GNOME itself would produce. It needs a real Shell, so it
                 runs locally as part of <code>just test-live</code>.
             </p>
+            <div class="note">
+                <p>
+                    <strong>Every shipped icon is decoded, not just packed.</strong>
+                    An icon that fails to load is completely silent: gnome-shell draws
+                    nothing and logs nothing, so the first report is a person saying
+                    there is no icon. A long XML comment placed
+                    <em>before</em> the <code>&lt;svg&gt;</code> element is enough to do
+                    it — it defeats gdk-pixbuf's format sniffing — which is why the
+                    comment in <code>icons/quicktiler-symbolic.svg</code> sits inside
+                    the element. <code>scripts/pack-check.sh</code> loads each icon at
+                    16×16 through <code>scripts/icon-check.js</code> and fails if it
+                    does not decode, or decodes to nothing visible. Neither the unit
+                    suite nor the headless check looks at an icon.
+                </p>
+            </div>
 
             <h2 id="releasing">Releasing</h2>
             <p>
@@ -362,8 +448,8 @@ just enable</code></pre>
                 <code>version</code> in <code>package.json</code> to the new version,
                 commit, then tag and push:
             </p>
-            <pre><code>git tag -a v0.1.0 -m 'release v0.1.0'
-git push origin v0.1.0</code></pre>
+            <pre><code>git tag -a v0.2.0 -m 'release v0.2.0'
+git push origin v0.2.0</code></pre>
             <p>
                 The tag drives everything. CI checks that it matches the version in both
                 files and stops before building if it does not — a release titled
