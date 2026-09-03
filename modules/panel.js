@@ -24,7 +24,7 @@ import * as QuickSettings from 'resource:///org/gnome/shell/ui/quickSettings.js'
 
 import { bindingLabel } from './accelerator.js';
 import { ACTIONS_BY_GROUP, ACTION_KEYS, GROUPS } from './actions.js';
-import { KEYS } from './settings.js';
+import { KEYS, SettingsWatcher } from './settings.js';
 
 // Injected by Panel's constructor rather than imported, so this module loads
 // under Vitest without gnome-shell's resource:// gettext. Assigned before any
@@ -192,8 +192,12 @@ export class Panel {
         this._iconPath = iconPath;
         this._runAction = runAction ?? (() => {});
         this._openPreferences = openPreferences ?? (() => {});
-        this._watchIds = [];
-        this._tileWatchIds = [];
+        // Two groups with different lifetimes: the first pair of watches is
+        // what brings the tile back after it is switched off, so it outlives
+        // the tile; the accelerator watches only retext labels, so they go
+        // when the labels do.
+        this._watches = new SettingsWatcher(settings);
+        this._tileWatches = new SettingsWatcher(settings);
         this._toggle = null;
         this._indicator = null;
         this._lastFocused = null;
@@ -205,45 +209,10 @@ export class Panel {
     enable() {
         // Watched even when the tile is hidden, so turning it on in the
         // preferences window brings it up without a re-enable.
-        this._watch(KEYS.SHOW_QUICK_SETTINGS, () => this._syncVisibility());
-        this._watch(KEYS.SHORTCUTS_ENABLED, () => this._toggle?.sync());
+        this._watches.watch(KEYS.SHOW_QUICK_SETTINGS, () => this._syncVisibility());
+        this._watches.watch(KEYS.SHORTCUTS_ENABLED, () => this._toggle?.sync());
 
         this._syncVisibility();
-    }
-
-    /**
-     * Connect a settings handler and record it for release.
-     *
-     * Gio.Settings has no connectObject, so these are manual ids kept in one
-     * list. Actor handlers go through connectObject instead, where
-     * tests/support/actors.js can prove they were all released.
-     *
-     * A list of ids rather than of teardown closures: every one of these is the
-     * same disconnect, and a general "disposers" registry invites a cleanup
-     * that is not a disconnect to be pushed in beside them — which would
-     * quietly break the ordering disable() depends on.
-     *
-     * @param {string} key Settings key to watch.
-     * @param {Function} callback Called when it changes.
-     */
-    _watch(key, callback) {
-        this._watchIds.push(this._settings.connect(`changed::${key}`, callback));
-    }
-
-    /**
-     * Watch a settings key only for as long as the tile exists.
-     *
-     * Released by _teardown() rather than disable(), so the accelerator watches
-     * live exactly as long as the labels they retext. With the tile switched
-     * off every one of them would resolve to syncAccelerator on a null toggle,
-     * and the gschema's description of show-quick-settings claims turning it
-     * off leaves the extension costing nothing between keypresses.
-     *
-     * @param {string} key Settings key to watch.
-     * @param {Function} callback Called when it changes.
-     */
-    _watchWhileBuilt(key, callback) {
-        this._tileWatchIds.push(this._settings.connect(`changed::${key}`, callback));
     }
 
     /** Build or tear down the tile, to match the show-quick-settings key. */
@@ -280,7 +249,7 @@ export class Panel {
         // fires for keys this file ignores. The explicit list is also the thing
         // a test can enumerate.
         for (const key of ACTION_KEYS)
-            this._watchWhileBuilt(key, () => this._toggle?.syncAccelerator(key));
+            this._tileWatches.watch(key, () => this._toggle?.syncAccelerator(key));
 
         global.display.connectObject(
             'notify::focus-window',
@@ -311,8 +280,7 @@ export class Panel {
      * bring the tile back when it is switched on again, without a re-enable.
      */
     _teardown() {
-        for (const id of this._tileWatchIds) this._settings.disconnect(id);
-        this._tileWatchIds = [];
+        this._tileWatches.release();
 
         global.display.disconnectObject(this);
 
@@ -331,8 +299,7 @@ export class Panel {
     disable() {
         // Watches first: no changed:: callback may fire into an actor that is
         // about to be taken apart.
-        for (const id of this._watchIds) this._settings.disconnect(id);
-        this._watchIds = [];
+        this._watches.release();
 
         this._teardown();
     }

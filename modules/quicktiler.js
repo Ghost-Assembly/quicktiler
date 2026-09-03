@@ -18,7 +18,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import { ACTIONS, ACTIONS_BY_KEY } from './actions.js';
 import { nearestNeighbour } from './neighbours.js';
-import { KEYS } from './settings.js';
+import { KEYS, SettingsWatcher } from './settings.js';
 import { isFocusable, isPlaceable } from './windows.js';
 import { matchZone, nextZone, projectZone, zoneById } from './zones.js';
 
@@ -88,8 +88,7 @@ export class QuickTiler {
     constructor(settings) {
         this._settings = settings;
         this._gap = settings.get_int(KEYS.GAP);
-        this._gapChangedId = 0;
-        this._shortcutsChangedId = 0;
+        this._watches = new SettingsWatcher(settings);
         this._bindings = [];
         this._bound = false;
 
@@ -191,7 +190,7 @@ export class QuickTiler {
         // the disconnect in disable(). A connect that outlives its disconnect is
         // precisely the leak this extension exists not to have.
         this._gap = this._settings.get_int(KEYS.GAP);
-        this._gapChangedId = this._settings.connect(`changed::${KEYS.GAP}`, () => {
+        this._watches.watch(KEYS.GAP, () => {
             this._gap = this._settings.get_int(KEYS.GAP);
         });
 
@@ -204,10 +203,7 @@ export class QuickTiler {
         //
         // Connected before the first read, so a change racing the connect
         // cannot be missed.
-        this._shortcutsChangedId = this._settings.connect(
-            `changed::${KEYS.SHORTCUTS_ENABLED}`,
-            () => this._syncShortcuts(),
-        );
+        this._watches.watch(KEYS.SHORTCUTS_ENABLED, () => this._syncShortcuts());
 
         this._syncShortcuts();
     }
@@ -281,22 +277,14 @@ export class QuickTiler {
     /**
      * Release every keybinding and signal.
      *
-     * Each id is held in a named field and dropped explicitly. gTile leaks here:
-     * it connects to `layoutManager.overviewGroup` but disconnects from
-     * `layoutManager`, so its handler survives disable.
+     * Every watch goes through one SettingsWatcher, so releasing them is one
+     * call that cannot leave a key behind. gTile leaks here: it connects to
+     * `layoutManager.overviewGroup` but disconnects from `layoutManager`, so
+     * its handler survives disable.
      */
     disable() {
         this.unbindKeys();
-
-        if (this._shortcutsChangedId) {
-            this._settings.disconnect(this._shortcutsChangedId);
-            this._shortcutsChangedId = 0;
-        }
-
-        if (this._gapChangedId) {
-            this._settings.disconnect(this._gapChangedId);
-            this._gapChangedId = 0;
-        }
+        this._watches.release();
     }
 
     /**
