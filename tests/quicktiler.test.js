@@ -78,9 +78,69 @@ describe('QuickTiler', () => {
             );
         });
 
-        it('disconnects the gap handler on disable', () => {
+        it('binds nothing when shortcuts are paused', () => {
+            settings = createSettings({ gap: GAP, 'shortcuts-enabled': false });
             start();
-            expect(settings.connected.size).toBe(1);
+
+            expect(Main.registered.size).toBe(0);
+            expect(quicktiler.bound).toBe(false);
+        });
+
+        it('releases every keybinding when the pause is set', () => {
+            start();
+            expect(quicktiler.bound).toBe(true);
+
+            settings.set_boolean('shortcuts-enabled', false);
+
+            expect(Main.registered.size).toBe(0);
+            expect(Main.removeCalls.sort()).toEqual([...ACTION_KEYS].sort());
+            expect(quicktiler.bound).toBe(false);
+        });
+
+        it('registers them again when the pause is lifted', () => {
+            start();
+            settings.set_boolean('shortcuts-enabled', false);
+            settings.set_boolean('shortcuts-enabled', true);
+
+            expect([...Main.registered.keys()].sort()).toEqual([...ACTION_KEYS].sort());
+            expect(Main.addCalls).toHaveLength(ACTION_KEYS.length * 2);
+            expect(quicktiler.bound).toBe(true);
+        });
+
+        it('binds once however often bindKeys is called', () => {
+            start();
+            quicktiler.bindKeys();
+            quicktiler.bindKeys();
+
+            expect(Main.addCalls).toHaveLength(ACTION_KEYS.length);
+        });
+
+        it('unbinds once however often unbindKeys is called', () => {
+            start();
+            quicktiler.unbindKeys();
+            quicktiler.unbindKeys();
+
+            expect(Main.removeCalls).toHaveLength(ACTION_KEYS.length);
+        });
+
+        // The idempotence guard cannot be `_bindings.length`: only accelerators
+        // Mutter accepted are recorded there, so someone who has given every
+        // action a colliding shortcut would leave it empty while the bindings
+        // are registered, and every unpause would re-run the loop and re-warn.
+        it('does not re-warn on unpause when Mutter refused everything', () => {
+            for (const key of ACTION_KEYS) Main.refuse.add(key);
+            start();
+            const warnings = console.warn.mock.calls.length;
+
+            quicktiler.bindKeys();
+
+            expect(console.warn.mock.calls).toHaveLength(warnings);
+        });
+
+        it('disconnects both settings handlers on disable', () => {
+            start();
+            // The gap watch and the shortcuts-enabled watch.
+            expect(settings.connected.size).toBe(2);
 
             quicktiler.disable();
             expect(settings.connected.size).toBe(0);
@@ -110,6 +170,87 @@ describe('QuickTiler', () => {
             Main.press('tile-left');
 
             expect(window.get_frame_rect()).toEqual(zone('left-quarter', WIDE, 0));
+        });
+    });
+
+    describe('run', () => {
+        it('performs the action a keypress would', () => {
+            const world = start();
+            const window = world.workspace.add(new FakeWindow())[0];
+            world.focus(window);
+
+            expect(quicktiler.run('tile-left')).toBe(true);
+            expect(window.moves.at(-1)).toMatchObject(zone('left-quarter'));
+        });
+
+        it('works while shortcuts are paused, because the pause is the keyboard', () => {
+            const world = start();
+            settings.set_boolean('shortcuts-enabled', false);
+            const window = world.workspace.add(new FakeWindow())[0];
+            world.focus(window);
+
+            expect(quicktiler.run('tile-left')).toBe(true);
+            expect(window.moves).toHaveLength(1);
+        });
+
+        // The quick settings menu holds a Clutter grab while it is open, and
+        // Mutter's focus window can be null for the duration. A menu row that
+        // relied on the display would silently do nothing.
+        it('acts on the target it was given rather than the focused window', () => {
+            const world = start();
+            const [focused, target] = world.workspace.add(
+                new FakeWindow(),
+                new FakeWindow(),
+            );
+            world.focus(focused);
+
+            quicktiler.run('tile-right', target);
+
+            expect(target.moves).toHaveLength(1);
+            expect(focused.moves).toHaveLength(0);
+        });
+
+        it('acts on the target even when nothing is focused at all', () => {
+            const world = start();
+            const target = world.workspace.add(new FakeWindow())[0];
+            world.focus(null);
+
+            quicktiler.run('tile-left', target);
+
+            expect(target.moves.at(-1)).toMatchObject(zone('left-quarter'));
+        });
+
+        it('applies the same window policy to a target as to a focused window', () => {
+            const world = start();
+            const target = world.workspace.add(new FakeWindow({ fullscreen: true }))[0];
+
+            quicktiler.run('tile-left', target);
+
+            expect(target.moves).toHaveLength(0);
+        });
+
+        it('does not leave the target standing in for the next keypress', () => {
+            const world = start();
+            const [focused, target] = world.workspace.add(
+                new FakeWindow(),
+                new FakeWindow(),
+            );
+            world.focus(focused);
+
+            quicktiler.run('tile-left', target);
+            Main.press('tile-left');
+
+            expect(focused.moves).toHaveLength(1);
+            expect(target.moves).toHaveLength(1);
+        });
+
+        it('warns and reports failure for an action it cannot perform', () => {
+            start();
+
+            expect(quicktiler.run('tile-diagonally')).toBe(false);
+            expect(console.warn).toHaveBeenCalledWith(
+                expect.stringContaining('no handler for action tile-diagonally'),
+            );
         });
     });
 

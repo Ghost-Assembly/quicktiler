@@ -18,6 +18,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import { ACTIONS } from './actions.js';
 import { nearestNeighbour } from './neighbours.js';
+import { KEYS } from './settings.js';
 import { isFocusable, isPlaceable } from './windows.js';
 import {
     MATCH_TOLERANCE,
@@ -75,12 +76,84 @@ export class QuickTiler {
      */
     constructor(settings) {
         this._settings = settings;
-        this._gap = settings.get_int('gap');
+        this._gap = settings.get_int(KEYS.GAP);
         this._gapChangedId = 0;
+        this._shortcutsChangedId = 0;
         this._bindings = [];
+        this._bound = false;
+        this._target = null;
+
+        // Built here rather than inside enable(), where it used to live, so
+        // that run() can reach it — the quick settings menu performs the same
+        // actions the keybindings do and must not carry a second copy of this
+        // list. The closures capture `this`, so the constructor is the only
+        // place it can be built once.
+        //
+        // Keyed by the same strings modules/actions.js and the gschema use, and
+        // driven from that list rather than from a second one written out here.
+        // A Map rather than an object literal for the reason given in
+        // modules/zones.js: a bare index resolves inherited keys.
+        this._handlers = new Map([
+            ['tile-left', () => this._tile('left')],
+            ['tile-right', () => this._tile('right')],
+            ['tile-center', () => this._tile('center')],
+            ['tile-maximize', () => this._toggleMaximize()],
+            ['focus-left', () => this._focusNeighbour(-1)],
+            ['focus-right', () => this._focusNeighbour(1)],
+            ['swap-left', () => this._swapNeighbour(-1)],
+            ['swap-right', () => this._swapNeighbour(1)],
+            ['move-monitor-next', () => this._moveToMonitor(1)],
+            ['move-monitor-prev', () => this._moveToMonitor(-1)],
+        ]);
     }
 
-    /** Register every keybinding. */
+    /**
+     * Whether the keybindings are currently registered with Mutter.
+     *
+     * @returns {boolean} True between bindKeys() and unbindKeys().
+     */
+    get bound() {
+        return this._bound;
+    }
+
+    /**
+     * Perform one action, as a keypress or a menu row would.
+     *
+     * `target` exists for the quick settings menu. Opening it takes a Clutter
+     * grab, and Mutter's focus window can be null for as long as the grab is
+     * held — so a menu row that relied on _focused() reading the display could
+     * silently do nothing, which is the failure mode modules/windows.js exists
+     * to avoid. The Panel passes the window it last saw focused instead. The
+     * target still goes through the same policy predicate as a focused window,
+     * so a window that has since closed is rejected exactly as one that was
+     * never eligible.
+     *
+     * @param {string} key Schema key of the action, as modules/actions.js spells it.
+     * @param {Meta.Window|null} [target] Window to act on, or null to use the
+     *   focused one.
+     * @returns {boolean} False if no such action exists.
+     */
+    run(key, target = null) {
+        const handler = this._handlers.get(key);
+
+        if (!handler) {
+            console.warn(`[quicktiler] no handler for action ${key}`);
+            return false;
+        }
+
+        this._target = target;
+        try {
+            handler();
+        } finally {
+            // Cleared however the handler left, so a throw cannot leave a stale
+            // window standing in for the focused one on the next keypress.
+            this._target = null;
+        }
+
+        return true;
+    }
+
+    /** Watch the settings, and register every keybinding unless paused. */
     enable() {
         // Cached, not read per keypress. gTile hits GSettings several times per
         // placement and re-parses its preset strings on every press.
@@ -88,10 +161,47 @@ export class QuickTiler {
         // Connected here rather than in the constructor so that it pairs with
         // the disconnect in disable(). A connect that outlives its disconnect is
         // precisely the leak this extension exists not to have.
-        this._gap = this._settings.get_int('gap');
-        this._gapChangedId = this._settings.connect('changed::gap', () => {
-            this._gap = this._settings.get_int('gap');
+        this._gap = this._settings.get_int(KEYS.GAP);
+        this._gapChangedId = this._settings.connect(`changed::${KEYS.GAP}`, () => {
+            this._gap = this._settings.get_int(KEYS.GAP);
         });
+
+        // The pause is watched here rather than driven from modules/panel.js,
+        // and that is not a preference. With show-quick-settings off there is
+        // no panel at all, and the preferences window's shortcuts switch would
+        // then be configurable and completely inert — the silent failure this
+        // extension is organised around not having. The panel only ever writes
+        // the key; this reacts to it.
+        //
+        // Connected before the first read, so a change racing the connect
+        // cannot be missed.
+        this._shortcutsChangedId = this._settings.connect(
+            `changed::${KEYS.SHORTCUTS_ENABLED}`,
+            () => this._syncShortcuts(),
+        );
+
+        this._syncShortcuts();
+    }
+
+    /** Bind or unbind, to match the shortcuts-enabled key. */
+    _syncShortcuts() {
+        if (this._settings.get_boolean(KEYS.SHORTCUTS_ENABLED)) this.bindKeys();
+        else this.unbindKeys();
+    }
+
+    /**
+     * Register every keybinding.
+     *
+     * Idempotent, because the tile can be clicked twice faster than anyone can
+     * think about it. The guard is a flag rather than `this._bindings.length`:
+     * only accelerators Mutter accepted are recorded there, so a user who has
+     * given every action a colliding shortcut would leave it empty while the
+     * bindings are conceptually registered, and a length check would re-run the
+     * whole loop and re-warn on every unpause.
+     */
+    bindKeys() {
+        if (this._bound) return;
+        this._bound = true;
 
         const bind = (key, handler) => {
             // addKeybinding returns NONE when registration fails, which happens
@@ -117,36 +227,27 @@ export class QuickTiler {
             this._bindings.push(key);
         };
 
-        // Keyed by the same strings modules/actions.js and the gschema use, and
-        // driven from that list rather than from a second one written out here.
-        // A Map rather than an object literal for the reason given in
-        // modules/zones.js: a bare index resolves inherited keys.
-        const handlers = new Map([
-            ['tile-left', () => this._tile('left')],
-            ['tile-right', () => this._tile('right')],
-            ['tile-center', () => this._tile('center')],
-            ['tile-maximize', () => this._toggleMaximize()],
-            ['focus-left', () => this._focusNeighbour(-1)],
-            ['focus-right', () => this._focusNeighbour(1)],
-            ['swap-left', () => this._swapNeighbour(-1)],
-            ['swap-right', () => this._swapNeighbour(1)],
-            ['move-monitor-next', () => this._moveToMonitor(1)],
-            ['move-monitor-prev', () => this._moveToMonitor(-1)],
-        ]);
-
         for (const { key } of ACTIONS) {
-            const handler = handlers.get(key);
-
             // tests/actions.test.js keeps ACTIONS and the gschema in step, but
-            // nothing off-Shell can check this map, so say so loudly rather than
-            // leaving a shortcut that is configurable and silently inert.
-            if (!handler) {
+            // nothing off-Shell can check the handler map, so say so loudly
+            // rather than leaving a shortcut that is configurable and silently
+            // inert. Checked here as well as in run(): an action nothing can
+            // perform should be reported when it is registered, not only if
+            // someone presses it.
+            if (!this._handlers.has(key)) {
                 console.warn(`[quicktiler] no handler for action ${key}`);
                 continue;
             }
 
-            bind(key, handler);
+            bind(key, () => this.run(key));
         }
+    }
+
+    /** Release every keybinding. Idempotent, for the reason bindKeys() gives. */
+    unbindKeys() {
+        for (const key of this._bindings) Main.wm.removeKeybinding(key);
+        this._bindings = [];
+        this._bound = false;
     }
 
     /**
@@ -157,8 +258,12 @@ export class QuickTiler {
      * `layoutManager`, so its handler survives disable.
      */
     disable() {
-        for (const key of this._bindings) Main.wm.removeKeybinding(key);
-        this._bindings = [];
+        this.unbindKeys();
+
+        if (this._shortcutsChangedId) {
+            this._settings.disconnect(this._shortcutsChangedId);
+            this._shortcutsChangedId = 0;
+        }
 
         if (this._gapChangedId) {
             this._settings.disconnect(this._gapChangedId);
@@ -173,7 +278,7 @@ export class QuickTiler {
      * @returns {Meta.Window|null} The focused window, or null.
      */
     _focused(accepts) {
-        const window = global.display.get_focus_window();
+        const window = this._target ?? global.display.get_focus_window();
         return accepts(describe(window)) ? window : null;
     }
 
