@@ -28,9 +28,13 @@ export default class QuickTilerExtension extends Extension {
             settings,
             iconPath: `${this.path}/icons/quicktiler-symbolic.svg`,
             gettext: _,
-            // A callback rather than `this`, so modules/panel.js never holds
-            // the Extension and cannot reach the rest of it.
-            runAction: (key, target) => this._quicktiler.run(key, target),
+            // A bound method rather than an arrow, so modules/panel.js holds
+            // the QuickTiler and nothing else. An arrow defined here would
+            // capture `this` — the Extension, and with it enable()'s whole
+            // scope — which is the reach this indirection exists to deny.
+            runAction: this._quicktiler.run.bind(this._quicktiler),
+            // This one genuinely needs the Extension: openPreferences is the
+            // Extension's own method and there is nothing smaller to hold.
             openPreferences: () => this.openPreferences(),
         });
         this._panel.enable();
