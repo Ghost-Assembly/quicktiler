@@ -52,6 +52,33 @@ export class FakeWindow {
         this.unmaximizeFlags = null;
 
         this.seq = nextSequence++;
+
+        // Handler id -> {signal, callback}. Mutter emits 'unmanaged' when a
+        // window closes, and modules/panel.js listens for it so the tile does
+        // not keep the last window it saw focused alive after it has gone.
+        this._handlers = new Map();
+        this._nextHandlerId = 1;
+    }
+
+    connect(signal, callback) {
+        const id = this._nextHandlerId++;
+        this._handlers.set(id, { signal, callback });
+        return id;
+    }
+
+    disconnect(id) {
+        this._handlers.delete(id);
+    }
+
+    /** Handlers still connected, so a test can prove they were released. */
+    get connectedHandlers() {
+        return this._handlers.size;
+    }
+
+    /** Close the window, as Mutter does when the user does. */
+    unmanage() {
+        for (const handler of [...this._handlers.values()])
+            if (handler.signal === 'unmanaged') handler.callback(this);
     }
 
     get_stable_sequence() {

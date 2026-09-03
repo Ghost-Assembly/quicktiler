@@ -354,6 +354,45 @@ describe('Panel', () => {
             expect(actions[0].target).toBe(second);
         });
 
+        // The tile holds a strong reference to whatever it last saw focused.
+        // Closing that window does not always move focus on -- close the last
+        // window on a workspace and nothing takes it -- so without the
+        // 'unmanaged' watch the MetaWindow could not be finalised.
+        it('is forgotten when that window closes', () => {
+            start();
+            const window = world.workspace.add(new FakeWindow())[0];
+            world.focus(window);
+
+            window.unmanage();
+            rowFor('tile-left').activate();
+
+            expect(actions[0].target).toBeNull();
+        });
+
+        it('leaves no handler on a window it has stopped tracking', () => {
+            start();
+            const [first, second] = world.workspace.add(
+                new FakeWindow(),
+                new FakeWindow(),
+            );
+
+            world.focus(first);
+            world.focus(second);
+
+            expect(first.connectedHandlers).toBe(0);
+            expect(second.connectedHandlers).toBe(1);
+        });
+
+        it('leaves no handler on the remembered window after teardown', () => {
+            start();
+            const window = world.workspace.add(new FakeWindow())[0];
+            world.focus(window);
+
+            panel.disable();
+
+            expect(window.connectedHandlers).toBe(0);
+        });
+
         it('is tracked only while the tile exists', () => {
             start();
             settings.emitChange(KEYS.SHOW_QUICK_SETTINGS, false);

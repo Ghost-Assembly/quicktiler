@@ -201,6 +201,7 @@ export class Panel {
         this._toggle = null;
         this._indicator = null;
         this._lastFocused = null;
+        this._lastFocusedUnmanagedId = 0;
 
         _ = gettext ?? (message => message);
     }
@@ -270,7 +271,28 @@ export class Panel {
      */
     _rememberFocus() {
         const window = global.display.get_focus_window();
-        if (window) this._lastFocused = window;
+        if (!window || window === this._lastFocused) return;
+
+        this._forgetFocus();
+        this._lastFocused = window;
+
+        // Mutter unmanages a window when it closes, and focus does not always
+        // move on afterwards — close the last window on a workspace and nothing
+        // takes it. Without this the tile would hold that MetaWindow, keeping
+        // it from being finalised, until something else was focused.
+        this._lastFocusedUnmanagedId = window.connect('unmanaged', () =>
+            this._forgetFocus(),
+        );
+    }
+
+    /** Drop the remembered window, and the handler watching for its close. */
+    _forgetFocus() {
+        if (this._lastFocusedUnmanagedId) {
+            this._lastFocused.disconnect(this._lastFocusedUnmanagedId);
+            this._lastFocusedUnmanagedId = 0;
+        }
+
+        this._lastFocused = null;
     }
 
     /**
@@ -292,7 +314,7 @@ export class Panel {
         this._indicator?.destroy();
         this._indicator = null;
 
-        this._lastFocused = null;
+        this._forgetFocus();
     }
 
     /** Release everything. */
