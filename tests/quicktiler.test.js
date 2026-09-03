@@ -4,6 +4,7 @@ import Meta from 'gi://Meta';
 
 import { ACTION_KEYS } from '../modules/actions.js';
 import { QuickTiler } from '../modules/quicktiler.js';
+import { KEYS } from '../modules/settings.js';
 import { projectZone, zoneById } from '../modules/zones.js';
 import * as Main from './stubs/shell-main.js';
 import { FakeWindow, createSettings, createWorld } from './support/world.js';
@@ -36,7 +37,7 @@ describe('QuickTiler', () => {
 
     beforeEach(() => {
         Main.reset();
-        settings = createSettings({ gap: GAP });
+        settings = createSettings({ [KEYS.GAP]: GAP });
         vi.spyOn(console, 'warn').mockImplementation(() => {});
     });
 
@@ -79,7 +80,10 @@ describe('QuickTiler', () => {
         });
 
         it('binds nothing when shortcuts are paused', () => {
-            settings = createSettings({ gap: GAP, 'shortcuts-enabled': false });
+            settings = createSettings({
+                [KEYS.GAP]: GAP,
+                [KEYS.SHORTCUTS_ENABLED]: false,
+            });
             start();
 
             expect(Main.registered.size).toBe(0);
@@ -90,7 +94,7 @@ describe('QuickTiler', () => {
             start();
             expect(quicktiler.bound).toBe(true);
 
-            settings.set_boolean('shortcuts-enabled', false);
+            settings.set_boolean(KEYS.SHORTCUTS_ENABLED, false);
 
             expect(Main.registered.size).toBe(0);
             expect(Main.removeCalls.sort()).toEqual([...ACTION_KEYS].sort());
@@ -99,8 +103,8 @@ describe('QuickTiler', () => {
 
         it('registers them again when the pause is lifted', () => {
             start();
-            settings.set_boolean('shortcuts-enabled', false);
-            settings.set_boolean('shortcuts-enabled', true);
+            settings.set_boolean(KEYS.SHORTCUTS_ENABLED, false);
+            settings.set_boolean(KEYS.SHORTCUTS_ENABLED, true);
 
             expect([...Main.registered.keys()].sort()).toEqual([...ACTION_KEYS].sort());
             expect(Main.addCalls).toHaveLength(ACTION_KEYS.length * 2);
@@ -152,7 +156,7 @@ describe('QuickTiler', () => {
             start();
             quicktiler.disable();
             quicktiler.enable();
-            settings.emitChange('gap', 40);
+            settings.emitChange(KEYS.GAP, 40);
 
             const window = world.workspace.add(new FakeWindow())[0];
             world.focus(window);
@@ -163,7 +167,7 @@ describe('QuickTiler', () => {
 
         it('picks up a gap change without being re-enabled', () => {
             start();
-            settings.emitChange('gap', 0);
+            settings.emitChange(KEYS.GAP, 0);
 
             const window = world.workspace.add(new FakeWindow())[0];
             world.focus(window);
@@ -185,7 +189,7 @@ describe('QuickTiler', () => {
 
         it('works while shortcuts are paused, because the pause is the keyboard', () => {
             const world = start();
-            settings.set_boolean('shortcuts-enabled', false);
+            settings.set_boolean(KEYS.SHORTCUTS_ENABLED, false);
             const window = world.workspace.add(new FakeWindow())[0];
             world.focus(window);
 
