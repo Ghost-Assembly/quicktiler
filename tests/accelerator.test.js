@@ -1,6 +1,3 @@
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -10,30 +7,7 @@ import {
     parseAccelerator,
 } from '../modules/accelerator.js';
 import { ACTION_KEYS } from '../modules/actions.js';
-
-const SCHEMA = fileURLToPath(
-    new URL(
-        '../schemas/org.gnome.shell.extensions.quicktiler.gschema.xml',
-        import.meta.url,
-    ),
-);
-
-/**
- * The accelerator each action defaults to, read from the gschema rather than
- * copied here, so this test cannot drift away from what ships.
- *
- * @returns {Map<string, string>} Schema key to accelerator.
- */
-function schemaDefaults() {
-    // SCHEMA is a module-relative constant resolved from import.meta.url, not
-    // input of any kind; the rule cannot see that it is not a variable path.
-    // eslint-disable-next-line security/detect-non-literal-fs-filename
-    const xml = readFileSync(SCHEMA, 'utf8');
-    const pattern =
-        /<key\s+type="as"\s+name="([^"]+)">\s*<default><!\[CDATA\[\['([^']+)'\]\]\]><\/default>/g;
-
-    return new Map([...xml.matchAll(pattern)].map(m => [m[1], m[2]]));
-}
+import { schemaDefaults } from './support/schema.js';
 
 describe('acceleratorLabel', () => {
     const defaults = schemaDefaults();

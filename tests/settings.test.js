@@ -1,40 +1,8 @@
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-
 import { describe, expect, it } from 'vitest';
 
 import { ACTION_KEYS } from '../modules/actions.js';
 import { KEYS, SETTINGS, SETTING_KEYS } from '../modules/settings.js';
-
-const SCHEMA = fileURLToPath(
-    new URL(
-        '../schemas/org.gnome.shell.extensions.quicktiler.gschema.xml',
-        import.meta.url,
-    ),
-);
-
-/**
- * Every non-keybinding key the gschema declares, with its type.
- *
- * The `as` keys are the actions and are checked by tests/actions.test.js;
- * everything else is a setting and belongs to modules/settings.js. Read from
- * the file rather than from a second hand-written list, for the reason
- * tests/actions.test.js gives.
- *
- * @returns {Map<string, string>} Key name to gvariant type, in declaration order.
- */
-function schemaSettings() {
-    // SCHEMA is a module-relative constant resolved from import.meta.url, not
-    // input of any kind; the rule cannot see that it is not a variable path.
-    // eslint-disable-next-line security/detect-non-literal-fs-filename
-    const xml = readFileSync(SCHEMA, 'utf8');
-
-    return new Map(
-        [...xml.matchAll(/<key\s+type="([^"]+)"\s+name="([^"]+)"/g)]
-            .filter(match => match[1] !== 'as')
-            .map(match => [match[2], match[1]]),
-    );
-}
+import { schemaSettings } from './support/schema.js';
 
 describe('SETTINGS', () => {
     it('finds a non-empty set of settings in the schema', () => {

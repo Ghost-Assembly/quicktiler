@@ -1,38 +1,13 @@
-import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
 import { acceleratorLabel } from '../modules/accelerator.js';
 import { ACTIONS, ACTIONS_BY_GROUP, ACTION_KEYS, GROUPS } from '../modules/actions.js';
+import { read, schemaDefaults, schemaKeys } from './support/schema.js';
 
-const SCHEMA = fileURLToPath(
-    new URL(
-        '../schemas/org.gnome.shell.extensions.quicktiler.gschema.xml',
-        import.meta.url,
-    ),
-);
 const README = fileURLToPath(new URL('../README.md', import.meta.url));
 const DOCS = fileURLToPath(new URL('../docs/index.html', import.meta.url));
-
-/**
- * Every keybinding key the gschema declares.
- *
- * Keybindings are the `as` keys; `gap` and any future scalar setting are not
- * actions and must not appear. Read from the file rather than from a second
- * hand-written list, because a second list is the problem this test exists to
- * catch.
- *
- * @returns {string[]} Schema key names, in declaration order.
- */
-function schemaKeys() {
-    // SCHEMA is a module-relative constant resolved from import.meta.url, not
-    // input of any kind; the rule cannot see that it is not a variable path.
-    // eslint-disable-next-line security/detect-non-literal-fs-filename
-    const xml = readFileSync(SCHEMA, 'utf8');
-
-    return [...xml.matchAll(/<key\s+type="as"\s+name="([^"]+)"/g)].map(m => m[1]);
-}
 
 describe('ACTIONS', () => {
     // The three-way drift this guards against is silent at runtime: a key in
@@ -98,32 +73,6 @@ describe('GROUPS', () => {
         expect(GROUPS.every(group => Object.isFrozen(group))).toBe(true);
     });
 });
-
-/**
- * Read a file the tests own, by absolute path.
- *
- * @param {string} path Absolute path.
- * @returns {string} File contents.
- */
-function read(path) {
-    // Each path is a module-relative constant resolved from import.meta.url, not
-    // input of any kind; the rule cannot see that it is not a variable path.
-    // eslint-disable-next-line security/detect-non-literal-fs-filename
-    return readFileSync(path, 'utf8');
-}
-
-/**
- * The accelerator each action defaults to, from the gschema.
- *
- * @returns {Map<string, string>} Schema key to accelerator, e.g. '<Super>bracketleft'.
- */
-function schemaDefaults() {
-    const xml = read(SCHEMA);
-    const pattern =
-        /<key\s+type="as"\s+name="([^"]+)">\s*<default><!\[CDATA\[\['([^']+)'\]\]\]><\/default>/g;
-
-    return new Map([...xml.matchAll(pattern)].map(m => [m[1], m[2]]));
-}
 
 /**
  * Turn a gschema accelerator into the pieces documentation spells out.
