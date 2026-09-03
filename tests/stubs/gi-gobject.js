@@ -10,7 +10,4 @@ export default {
         // Real registerClass accepts an optional metadata object first.
         return args.at(-1);
     },
-
-    ParamFlags: { READABLE: 1, WRITABLE: 2, READWRITE: 3 },
-    BindingFlags: { DEFAULT: 0, SYNC_CREATE: 1, BIDIRECTIONAL: 2 },
 };

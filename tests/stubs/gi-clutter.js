@@ -7,7 +7,4 @@
 
 export default {
     ActorAlign: { FILL: 0, START: 1, CENTER: 2, END: 3 },
-    Orientation: { HORIZONTAL: 0, VERTICAL: 1 },
-    EVENT_PROPAGATE: false,
-    EVENT_STOP: true,
 };

@@ -58,8 +58,8 @@ export const externalIndicators = [];
 /**
  * The quick settings area modules/panel.js installs its tile into.
  *
- * A FakeActor rather than a plain object, because the panel reads `mapped` and
- * `reactive` off it and a test has to be able to change them.
+ * A FakeActor rather than a plain object so that addExternalIndicator's
+ * argument is parented the way the Shell parents it, and destroy() reaches it.
  */
 export const quickSettings = new FakeActor();
 
@@ -85,8 +85,6 @@ export function reset() {
     refuse.clear();
     layoutManager.monitors = [{}];
     externalIndicators.length = 0;
-    quickSettings.mapped = true;
-    quickSettings.reactive = true;
 }
 
 /**

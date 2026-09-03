@@ -10,15 +10,10 @@ class QuickToggleMenu extends MenuBase {
         // The root of the chain: _getTopMenu() stops here.
         this._ownerItem = null;
         this.header = { icon: null, title: '', subtitle: '' };
-        this.headerSuffixes = [];
     }
 
     setHeader(icon, title, subtitle = '') {
         this.header = { icon, title, subtitle };
-    }
-
-    addHeaderSuffix(actor) {
-        this.headerSuffixes.push(actor);
     }
 }
 

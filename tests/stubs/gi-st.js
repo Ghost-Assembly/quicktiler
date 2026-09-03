@@ -6,16 +6,8 @@
 
 import { FakeActor } from '../support/actors.js';
 
-class Widget extends FakeActor {}
-class BoxLayout extends Widget {}
-class Icon extends Widget {}
-class Label extends Widget {}
+class Label extends FakeActor {}
 
 export default {
-    Widget,
-    BoxLayout,
-    Icon,
     Label,
-
-    Align: { START: 0, MIDDLE: 1, END: 2 },
 };

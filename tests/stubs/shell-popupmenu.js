@@ -18,16 +18,6 @@ function makeLabel(text) {
 }
 
 class PopupBaseMenuItem extends FakeActor {
-    _init(props = {}) {
-        super._init(props);
-        this.sensitive = props.reactive !== false;
-        this.label_actor = null;
-    }
-
-    setSensitive(sensitive) {
-        this.sensitive = sensitive;
-    }
-
     /**
      * Wire up the St.Label the real classes expose as `this.label`.
      *
@@ -41,7 +31,6 @@ class PopupBaseMenuItem extends FakeActor {
      */
     _initLabel(text) {
         this.label = makeLabel(text);
-        this.label_actor = this.label;
         this.add_child(this.label);
     }
 
@@ -101,10 +90,6 @@ class MenuBase extends FakeActor {
         this.remove_all_children();
     }
 
-    isEmpty() {
-        return this.items.length === 0;
-    }
-
     open() {
         this.isOpen = true;
         this.emit('open-state-changed', true);
@@ -131,10 +116,10 @@ class PopupSubMenuMenuItem extends PopupBaseMenuItem {
     _init(text, wantIcon = false, props = {}) {
         super._init(props);
 
-        // The real class exposes the St.Label as `this.label` and sets
-        // label_actor to it (js/ui/popupMenu.js:1320). tests/panel.test.js
-        // reads a section's title back through it, so the stub has to offer
-        // the same handle rather than a plain string.
+        // The real class exposes the St.Label as `this.label`
+        // (js/ui/popupMenu.js:1320). tests/panel.test.js reads a section's
+        // title back through it, so the stub has to offer the same handle
+        // rather than a plain string.
         this._initLabel(text);
 
         if (wantIcon) {

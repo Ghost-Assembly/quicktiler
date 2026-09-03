@@ -8,6 +8,4 @@ export default {
     // Returns an object rather than a string, so a test can tell an icon that
     // was built from the injected path apart from one that was not built at all.
     icon_new_for_string: name => ({ name, isGicon: true }),
-
-    SettingsBindFlags: { DEFAULT: 0, GET: 1, SET: 2, NO_SENSITIVITY: 4 },
 };
