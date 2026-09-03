@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 import { acceleratorLabel } from '../modules/accelerator.js';
-import { ACTIONS, ACTION_KEYS } from '../modules/actions.js';
+import { ACTIONS, ACTIONS_BY_GROUP, ACTION_KEYS, GROUPS } from '../modules/actions.js';
 
 const SCHEMA = fileURLToPath(
     new URL(
@@ -63,6 +63,39 @@ describe('ACTIONS', () => {
     it('is frozen, so no caller can reorder or extend it', () => {
         expect(Object.isFrozen(ACTIONS)).toBe(true);
         expect(ACTIONS.every(action => Object.isFrozen(action))).toBe(true);
+    });
+});
+
+describe('GROUPS', () => {
+    // The menu builds its sections from GROUPS and fills them from
+    // ACTIONS_BY_GROUP. An action whose group matches no section would simply
+    // not be listed, with nothing anywhere to say so.
+    it('gives every action a group that exists', () => {
+        const ids = new Set(GROUPS.map(group => group.id));
+        for (const action of ACTIONS) expect(ids).toContain(action.group);
+    });
+
+    it('leaves no group empty', () => {
+        for (const group of GROUPS)
+            expect(ACTIONS_BY_GROUP.get(group.id).length).toBeGreaterThan(0);
+    });
+
+    it('lists every action exactly once across the groups', () => {
+        const grouped = GROUPS.flatMap(group => [...ACTIONS_BY_GROUP.get(group.id)]);
+        expect(grouped).toEqual([...ACTIONS]);
+    });
+
+    it('gives every group a non-empty label', () => {
+        for (const group of GROUPS) expect(group.label.trim()).not.toBe('');
+    });
+
+    it('gives every group a unique id', () => {
+        expect(new Set(GROUPS.map(group => group.id)).size).toBe(GROUPS.length);
+    });
+
+    it('is frozen, so no caller can reorder or extend it', () => {
+        expect(Object.isFrozen(GROUPS)).toBe(true);
+        expect(GROUPS.every(group => Object.isFrozen(group))).toBe(true);
     });
 });
 
