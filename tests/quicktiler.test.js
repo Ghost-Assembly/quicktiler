@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Meta from 'gi://Meta';
 
 import { ACTION_KEYS } from '../modules/actions.js';
-import { Tiler } from '../modules/tiler.js';
+import { QuickTiler } from '../modules/quicktiler.js';
 import { projectZone, zoneById } from '../modules/zones.js';
 import * as Main from './stubs/shell-main.js';
 import { FakeWindow, createSettings, createWorld } from './support/world.js';
@@ -16,21 +16,21 @@ const GAP = 8;
 const zone = (id, workArea = WIDE, gap = GAP) =>
     projectZone(zoneById(id), workArea, gap);
 
-describe('Tiler', () => {
+describe('QuickTiler', () => {
     let settings;
-    let tiler;
+    let quicktiler;
     let world;
 
     /**
-     * Build a world, a Tiler and enable it.
+     * Build a world, a QuickTiler and enable it.
      *
      * @param {Array<object>} [workAreas] One work area per monitor.
      * @returns {object} The world.
      */
     const start = (workAreas = [WIDE]) => {
         world = createWorld(workAreas);
-        tiler = new Tiler(settings);
-        tiler.enable();
+        quicktiler = new QuickTiler(settings);
+        quicktiler.enable();
         return world;
     };
 
@@ -61,7 +61,7 @@ describe('Tiler', () => {
         it('does not track a keybinding Mutter refused', () => {
             Main.refuse.add('tile-left');
             start();
-            tiler.disable();
+            quicktiler.disable();
 
             expect(Main.removeCalls).not.toContain('tile-left');
             expect(Main.removeCalls.sort()).toEqual(
@@ -82,7 +82,7 @@ describe('Tiler', () => {
             start();
             expect(settings.connected.size).toBe(1);
 
-            tiler.disable();
+            quicktiler.disable();
             expect(settings.connected.size).toBe(0);
         });
 
@@ -90,8 +90,8 @@ describe('Tiler', () => {
         // in disable(), so a second enable() on one instance lost gap tracking.
         it('still tracks the gap after a disable and a second enable', () => {
             start();
-            tiler.disable();
-            tiler.enable();
+            quicktiler.disable();
+            quicktiler.enable();
             settings.emitChange('gap', 40);
 
             const window = world.workspace.add(new FakeWindow())[0];

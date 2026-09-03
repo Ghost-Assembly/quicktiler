@@ -1,4 +1,4 @@
-// The one list of Tiler's actions.
+// The one list of QuickTiler's actions.
 //
 // This file imports nothing — not gi://, not resource:/// — for two reasons.
 // It has to be loadable from the preferences process, which has no access to
@@ -6,13 +6,13 @@
 // plain Node so tests/actions.test.js can check it against the gschema.
 //
 // The list previously existed three times: as keys in the gschema, as bind()
-// calls in modules/tiler.js, and as labels in prefs.js, with nothing checking
+// calls in modules/quicktiler.js, and as labels in prefs.js, with nothing checking
 // that the three agreed. Adding a key to two of them produced a shortcut that
 // was configurable and did nothing, with no error logged anywhere — the same
 // silent-failure mode modules/windows.js exists to avoid.
 
 /**
- * Every action Tiler binds, in the order the preferences window lists them.
+ * Every action QuickTiler binds, in the order the preferences window lists them.
  *
  * `label` is untranslated. prefs.js passes it through gettext at row-build
  * time; nothing here may import gettext. If a po/ directory is ever added,

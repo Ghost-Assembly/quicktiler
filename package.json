@@ -1,6 +1,6 @@
 {
-    "name": "tiler",
-    "version": "0.1.0",
+    "name": "quicktiler",
+    "version": "0.2.0",
     "description": "Keyboard-driven zone tiling for GNOME Shell",
     "license": "GPL-3.0-or-later",
     "private": true,

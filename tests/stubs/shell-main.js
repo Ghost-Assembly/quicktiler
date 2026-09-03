@@ -1,7 +1,7 @@
 // Stand-in for resource:///org/gnome/shell/ui/main.js.
 //
 // A module singleton, because that is what the real one is and what
-// modules/tiler.js imports. Tests must call reset() in beforeEach, or state
+// modules/quicktiler.js imports. Tests must call reset() in beforeEach, or state
 // leaks between them.
 
 /** Keybindings currently registered, by schema key. */

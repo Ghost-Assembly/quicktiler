@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<schemalist gettext-domain="tiler">
-  <schema id="org.gnome.shell.extensions.tiler"
-          path="/org/gnome/shell/extensions/tiler/">
+<schemalist gettext-domain="quicktiler">
+  <schema id="org.gnome.shell.extensions.quicktiler"
+          path="/org/gnome/shell/extensions/quicktiler/">
 
     <key type="i" name="gap">
       <default>8</default>

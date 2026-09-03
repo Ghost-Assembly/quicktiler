@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import TilerExtension from '../extension.js';
+import QuickTilerExtension from '../extension.js';
 import { ACTION_KEYS } from '../modules/actions.js';
 import * as Main from './stubs/shell-main.js';
 import { createSettings, createWorld } from './support/world.js';
 
-describe('TilerExtension', () => {
+describe('QuickTilerExtension', () => {
     let extension;
 
     beforeEach(() => {
@@ -13,7 +13,7 @@ describe('TilerExtension', () => {
         createWorld();
         vi.spyOn(console, 'debug').mockImplementation(() => {});
 
-        extension = new TilerExtension({ 'version-name': '1.2.3' });
+        extension = new QuickTilerExtension({ 'version-name': '1.2.3' });
         extension.settings = createSettings();
     });
 
@@ -49,22 +49,22 @@ describe('TilerExtension', () => {
     it('logs the marker headless-check.sh greps for, with the version', () => {
         extension.enable();
 
-        expect(console.debug).toHaveBeenCalledWith('[tiler] enabled (v1.2.3)');
+        expect(console.debug).toHaveBeenCalledWith('[quicktiler] enabled (v1.2.3)');
     });
 
     it('falls back to ? when metadata carries no version name', () => {
-        const bare = new TilerExtension({});
+        const bare = new QuickTilerExtension({});
         bare.settings = createSettings();
         bare.enable();
 
-        expect(console.debug).toHaveBeenCalledWith('[tiler] enabled (v?)');
+        expect(console.debug).toHaveBeenCalledWith('[quicktiler] enabled (v?)');
     });
 
-    it('drops its Tiler on disable', () => {
+    it('drops its QuickTiler on disable', () => {
         extension.enable();
         extension.disable();
 
-        expect(extension._tiler).toBeNull();
+        expect(extension._quicktiler).toBeNull();
     });
 
     it('tolerates disable without a preceding enable', () => {

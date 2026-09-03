@@ -1,10 +1,10 @@
 {
-    "uuid": "tiler@napalm255.github.io",
-    "name": "Tiler",
+    "uuid": "quicktiler@napalm255.github.io",
+    "name": "QuickTiler",
     "description": "Keyboard-driven zone tiling. Cycle windows through quarter, half and centre zones with no overlay, no timers and no background work.",
     "shell-version": ["49", "50"],
-    "url": "https://github.com/napalm255/tiler",
-    "settings-schema": "org.gnome.shell.extensions.tiler",
-    "gettext-domain": "tiler",
-    "version-name": "0.1.0"
+    "url": "https://github.com/napalm255/quicktiler",
+    "settings-schema": "org.gnome.shell.extensions.quicktiler",
+    "gettext-domain": "quicktiler",
+    "version-name": "0.2.0"
 }

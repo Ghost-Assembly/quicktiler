@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Boot a throwaway headless gnome-shell with Tiler installed and assert that it
-# enables cleanly, disables cleanly, and can be enabled again without leaking.
+# Boot a throwaway headless gnome-shell with QuickTiler installed and assert
+# that it enables cleanly, disables cleanly, and can be enabled again without
+# leaking.
 #
 # The enable/disable/enable cycle is the point: it is the shape of bug gTile
 # has, where a signal connected at enable is never disconnected, so the second
@@ -11,8 +12,13 @@
 
 set -euo pipefail
 
-UUID="tiler@napalm255.github.io"
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# Derived, so metadata.json is the only place the uuid is written down. It was
+# spelled out here once, and a rename then left this script installing under one
+# uuid and enabling another — which fails as "extension not found", nowhere near
+# the line that is actually wrong.
+UUID="$(jq -r .uuid "$REPO_ROOT/metadata.json")"
 TIMEOUT="${TIMEOUT:-60}"
 
 # The private XDG directories must be exported BEFORE dbus-run-session starts,
@@ -20,21 +26,21 @@ TIMEOUT="${TIMEOUT:-60}"
 # by a bus that inherited the real XDG_CONFIG_HOME will read and write the
 # developer's own dconf database — `gsettings set` then silently affects the
 # real session and the shell under test loads the real extension list.
-if [[ -z "${TILER_HEADLESS:-}" ]]; then
-    TILER_WORK="$(mktemp -d)"
-    export TILER_HEADLESS=1
-    export TILER_WORK
-    export XDG_CONFIG_HOME="$TILER_WORK/config"
-    export XDG_DATA_HOME="$TILER_WORK/data"
-    export XDG_CACHE_HOME="$TILER_WORK/cache"
-    export XDG_RUNTIME_DIR="$TILER_WORK/run"
+if [[ -z "${QUICKTILER_HEADLESS:-}" ]]; then
+    QUICKTILER_WORK="$(mktemp -d)"
+    export QUICKTILER_HEADLESS=1
+    export QUICKTILER_WORK
+    export XDG_CONFIG_HOME="$QUICKTILER_WORK/config"
+    export XDG_DATA_HOME="$QUICKTILER_WORK/data"
+    export XDG_CACHE_HOME="$QUICKTILER_WORK/cache"
+    export XDG_RUNTIME_DIR="$QUICKTILER_WORK/run"
     mkdir -p "$XDG_CONFIG_HOME" "$XDG_DATA_HOME" "$XDG_CACHE_HOME" "$XDG_RUNTIME_DIR"
     chmod 700 "$XDG_RUNTIME_DIR"
 
     exec dbus-run-session -- "${BASH_SOURCE[0]}" "$@"
 fi
 
-WORK="$TILER_WORK"
+WORK="$QUICKTILER_WORK"
 LOG="$WORK/shell.log"
 
 EXT_DIR="$XDG_DATA_HOME/gnome-shell/extensions/$UUID"
@@ -81,8 +87,8 @@ trap cleanup EXIT
 
 fail() {
     echo "FAIL: $1" >&2
-    echo "---- shell log (tiler and errors only) ----" >&2
-    grep -aiE 'tiler|JS ERROR|Extension' "$LOG" >&2 || echo "(nothing matched)" >&2
+    echo "---- shell log (quicktiler and errors only) ----" >&2
+    grep -aiE 'quicktiler|JS ERROR|Extension' "$LOG" >&2 || echo "(nothing matched)" >&2
     exit 1
 }
 
@@ -101,14 +107,14 @@ wait_for() {
     return 1
 }
 
-wait_for '\[tiler\] enabled' || fail "extension never reported enabled within ${TIMEOUT}s"
+wait_for '\[quicktiler\] enabled' || fail "extension never reported enabled within ${TIMEOUT}s"
 echo "ok: enabled"
 
 # A second enable must be as clean as the first.
 gnome-extensions disable "$UUID"
 sleep 2
 gnome-extensions enable "$UUID"
-wait_for '\[tiler\] enabled' 2 || fail "extension did not re-enable after disable"
+wait_for '\[quicktiler\] enabled' 2 || fail "extension did not re-enable after disable"
 echo "ok: re-enabled after disable"
 
 if grep -qaE 'JS ERROR|Extension .* had error' "$LOG"; then

@@ -1,4 +1,4 @@
-# Tiler
+# QuickTiler
 
 Keyboard-driven zone tiling for GNOME Shell.
 
@@ -7,13 +7,13 @@ that side. There is no overlay, no grid picker and no panel button — between
 keypresses the extension creates no actors, runs no timers and connects to no
 global signals, so it costs nothing at all.
 
-**[Documentation →](https://napalm255.github.io/tiler/)** — zones, architecture,
+**[Documentation →](https://napalm255.github.io/quicktiler/)** — zones, architecture,
 testing, packaging and releasing.
 
 ## Zones
 
 Both common ultrawide layouts — `1/4 + 1/2 + 1/4` and `1/2 + 1/2` — are
-span-merges of the same four-column grid, so Tiler has no notion of a "current
+span-merges of the same four-column grid, so QuickTiler has no notion of a "current
 layout" to switch between. It has one flat list of zones and three cycles:
 
 | Key         | Cycles through                                            |
@@ -51,8 +51,8 @@ Needs GNOME 49 or newer. From the latest release, with no clone and no
 toolchain — `gnome-extensions` ships with GNOME Shell itself:
 
 ```
-curl -LO 'https://github.com/napalm255/tiler/releases/latest/download/tiler@napalm255.github.io.shell-extension.zip'
-gnome-extensions install --force 'tiler@napalm255.github.io.shell-extension.zip'
+curl -LO 'https://github.com/napalm255/quicktiler/releases/latest/download/quicktiler@napalm255.github.io.shell-extension.zip'
+gnome-extensions install --force 'quicktiler@napalm255.github.io.shell-extension.zip'
 ```
 
 That unpacks the extension and compiles its settings schema, so there is no
@@ -60,7 +60,7 @@ separate `glib-compile-schemas` step. Log out and back in — Wayland cannot
 reload the Shell in place — then turn it on:
 
 ```
-gnome-extensions enable tiler@napalm255.github.io
+gnome-extensions enable quicktiler@napalm255.github.io
 ```
 
 From a clone:
@@ -75,6 +75,20 @@ Log out and back in if the Shell does not pick it up. `just prefs` opens the
 preferences window, `just logs` follows the extension's output, and
 `just disable` turns it off again without uninstalling.
 
+### Upgrading from Tiler 0.1.0
+
+QuickTiler was called Tiler up to 0.1.0, and the rename changed the extension's
+uuid. GNOME identifies an extension by that uuid, so 0.2.0 installs alongside
+the old one rather than replacing it, and both try to claim the same shortcuts —
+only one of them can. Remove the old one first:
+
+```
+gnome-extensions uninstall tiler@napalm255.github.io
+```
+
+The gap and shortcut settings do not carry over; they live under the old
+schema path and are set again in the preferences window.
+
 ## Develop
 
 ```
@@ -88,17 +102,17 @@ just docs       # serve the documentation site locally
 
 `modules/zones.js`, `windows.js`, `neighbours.js`, `actions.js` and
 `shortcuts.js` import nothing at all, so Vitest runs them on plain Node.
-`modules/tiler.js` is the only file that touches Meta, Shell or Main, and is
+`modules/quicktiler.js` is the only file that touches Meta, Shell or Main, and is
 unit-tested through stubs aliased in `vitest.config.js`. The
-[architecture](https://napalm255.github.io/tiler/#architecture) and
-[testing](https://napalm255.github.io/tiler/#testing) sections of the
+[architecture](https://napalm255.github.io/quicktiler/#architecture) and
+[testing](https://napalm255.github.io/quicktiler/#testing) sections of the
 documentation go into why.
 
 ## Releasing
 
 Set the version in `metadata.json` and `package.json`, commit, then tag and
 push. CI checks the tag against both files before it builds anything. See
-[releasing](https://napalm255.github.io/tiler/#releasing).
+[releasing](https://napalm255.github.io/quicktiler/#releasing).
 
 ## Licence
 
