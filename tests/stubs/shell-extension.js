@@ -11,6 +11,14 @@ export class Extension {
     constructor(metadata = {}) {
         this.metadata = metadata;
         this.settings = null;
+
+        // The real one is the extension's install directory. extension.js
+        // builds the tile's icon path from it, and tests assert on that path
+        // rather than on a file that has to exist.
+        this.path = '/nonexistent/quicktiler';
+
+        /** Every openPreferences call, so a test can count them. */
+        this.preferencesOpened = 0;
     }
 
     /**
@@ -18,5 +26,10 @@ export class Extension {
      */
     getSettings() {
         return this.settings;
+    }
+
+    /** Open the preferences window. Recorded rather than performed. */
+    openPreferences() {
+        this.preferencesOpened += 1;
     }
 }
