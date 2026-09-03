@@ -25,10 +25,21 @@ describe('QuickTilerExtension', () => {
     /** The quick settings tile the extension installed. */
     const toggle = () => Main.externalIndicators.at(-1).indicator.quickSettingsItems[0];
 
+    /**
+     * The tile's menu, opened. It builds itself on first open, as in the Shell.
+     *
+     * @returns {object} The open menu.
+     */
+    const menu = () => {
+        const tile = toggle();
+        tile.menu.open();
+        return tile.menu;
+    };
+
     /** The row for one action, walking the tile's sections in order. */
     const rowFor = key => {
-        const rows = toggle()
-            .menu.items.filter(item => item.menu)
+        const rows = menu()
+            .items.filter(item => item.menu)
             .flatMap(section => section.menu.items);
         return rows.at(ACTION_KEYS.indexOf(key));
     };
@@ -132,7 +143,7 @@ describe('QuickTilerExtension', () => {
 
     it('opens the preferences window from the settings row', () => {
         extension.enable();
-        toggle().menu.items.at(-1).activate();
+        menu().items.at(-1).activate();
 
         expect(extension.preferencesOpened).toBe(1);
     });

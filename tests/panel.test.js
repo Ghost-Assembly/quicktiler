@@ -46,9 +46,22 @@ describe('Panel', () => {
     const toggle = () =>
         Main.externalIndicators.at(-1)?.indicator.quickSettingsItems[0];
 
+    /**
+     * The tile's menu, opened.
+     *
+     * The menu builds itself on first open, as it does in the Shell, so
+     * anything reading its contents has to open it first.
+     *
+     * @returns {object} The open menu.
+     */
+    const menu = () => {
+        const tile = toggle();
+        tile.menu.open();
+        return tile.menu;
+    };
+
     /** The submenu section for a group id. */
-    const section = id =>
-        toggle().menu.items[GROUPS.findIndex(group => group.id === id)];
+    const section = id => menu().items[GROUPS.findIndex(group => group.id === id)];
 
     /** Every action row, in menu order. */
     const rows = () => GROUPS.flatMap(group => section(group.id).menu.items);
@@ -202,11 +215,44 @@ describe('Panel', () => {
     });
 
     describe('the menu', () => {
+        // Four sections, ten rows, ten labels and a GSettings read per row.
+        // The extension is disabled on lock and re-enabled on unlock, so
+        // building it eagerly put all of that on the compositor's critical
+        // path at every unlock, for a menu many people never open.
+        it('builds nothing until it is first opened', () => {
+            start();
+
+            expect(toggle().menu.items).toHaveLength(0);
+
+            toggle().menu.open();
+
+            expect(toggle().menu.items.length).toBeGreaterThan(0);
+        });
+
+        it('builds its rows once, however often it is reopened', () => {
+            start();
+            const tile = toggle();
+            const row = rowFor('tile-left');
+
+            tile.menu.close();
+            tile.menu.open();
+
+            expect(row._wasDestroyed).toBe(false);
+            expect(rowFor('tile-left')).toBe(row);
+        });
+
+        // The build reads every accelerator itself, so a rebinding that
+        // happened while there were no rows to retext is not lost.
+        it('shows a shortcut rebound before it was ever opened', () => {
+            start();
+            settings.emitChange('tile-left', ['<Super>F5']);
+
+            expect(acceleratorOn(rowFor('tile-left'))).toBe('Super+F5');
+        });
+
         it('lists one section per group, in order', () => {
             start();
-            const titles = GROUPS.map(
-                (_group, index) => toggle().menu.items.at(index).text,
-            );
+            const titles = GROUPS.map((_group, index) => menu().items.at(index).text);
 
             expect(titles).toEqual(GROUPS.map(group => group.label));
         });
@@ -253,7 +299,7 @@ describe('Panel', () => {
 
         it('separates the settings row from the sections', () => {
             start();
-            const items = toggle().menu.items;
+            const items = menu().items;
 
             expect(items).toHaveLength(GROUPS.length + 2);
             expect(items.at(-1).text).toBe('Settings');
@@ -261,7 +307,7 @@ describe('Panel', () => {
 
         it('opens the preferences window from the settings row', () => {
             start();
-            toggle().menu.items.at(-1).activate();
+            menu().items.at(-1).activate();
 
             expect(preferencesOpened).toBe(1);
         });
@@ -408,8 +454,8 @@ describe('Panel', () => {
             panel.enable();
 
             expect(() => rowFor('tile-left').activate()).not.toThrow();
-            expect(() => toggle().menu.items.at(-1).activate()).not.toThrow();
-            expect(toggle().menu.items[0].text).toBe('Tile');
+            expect(() => menu().items.at(-1).activate()).not.toThrow();
+            expect(menu().items[0].text).toBe('Tile');
         });
     });
 

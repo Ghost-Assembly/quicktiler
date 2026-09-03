@@ -63,11 +63,37 @@ const QuickTilerToggle = GObject.registerClass(
             // Kept so a rebinding can retext one label instead of rebuilding
             // the menu; see syncAccelerator().
             this._accelerators = new Map();
+            this._menuBuilt = false;
 
-            this._buildMenu();
             this.sync();
 
             this.connectObject('clicked', () => this._onClicked(), this);
+
+            // The menu is built the first time it is opened, not here. It is
+            // four sections, ten rows, ten St.Labels and a GSettings read per
+            // row — and the extension is disabled on lock and re-enabled on
+            // unlock, so all of it ran on the compositor's critical path at
+            // every login and every unlock, for a menu many people never open.
+            //
+            // Nothing else needs it to exist: sync() only sets the header, and
+            // syncAccelerator() already tolerates a row that is not there,
+            // because a rebinding before the first open is picked up by the
+            // get_strv the build itself does.
+            this.menu.connectObject(
+                'open-state-changed',
+                (menu, open) => {
+                    if (open) this._buildMenuOnce();
+                },
+                this,
+            );
+        }
+
+        /** Build the menu, the first time it is opened. */
+        _buildMenuOnce() {
+            if (this._menuBuilt) return;
+            this._menuBuilt = true;
+
+            this._buildMenu();
         }
 
         /** Build the four sections, their rows, and the settings row. */
