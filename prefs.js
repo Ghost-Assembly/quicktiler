@@ -12,9 +12,11 @@ import {
     gettext as _,
 } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
-// modules/actions.js imports nothing, so it is safe to pull into this process,
-// which has no access to gnome-shell's resource:// modules. Sharing it is what
-// stops the action list here from drifting away from the one quicktiler.js binds.
+// These modules import nothing, so they are safe to pull into this process,
+// which has no access to gnome-shell's resource:// modules. Sharing them is
+// what stops the action list here — and the way a shortcut is spelled — from
+// drifting away from what quicktiler.js binds and the quick settings menu shows.
+import { acceleratorOf } from './modules/accelerator.js';
 import { ACTIONS } from './modules/actions.js';
 import { KEYS } from './modules/settings.js';
 import {
@@ -28,15 +30,9 @@ import {
 // The Gdk and Gtk values modules/shortcuts.js needs. Passed in rather than
 // imported there, so the rules themselves stay testable on plain Node.
 const GTK_BINDING = {
-    get escapeKey() {
-        return Gdk.KEY_Escape;
-    },
-    get backspaceKey() {
-        return Gdk.KEY_BackSpace;
-    },
-    get shiftMask() {
-        return Gdk.ModifierType.SHIFT_MASK;
-    },
+    escapeKey: Gdk.KEY_Escape,
+    backspaceKey: Gdk.KEY_BackSpace,
+    shiftMask: Gdk.ModifierType.SHIFT_MASK,
     acceleratorValid: (keyval, mask) => Gtk.accelerator_valid(keyval, mask),
 };
 
@@ -72,7 +68,7 @@ const ShortcutRow = GObject.registerClass(
 
         /** Refresh the displayed accelerator from settings. */
         _sync() {
-            this._label.accelerator = this._settings.get_strv(this._key)[0] ?? '';
+            this._label.accelerator = acceleratorOf(this._settings.get_strv(this._key));
         }
 
         /** Open a modal window that records the next key combination. */
@@ -175,7 +171,7 @@ export default class QuickTilerPreferences extends ExtensionPreferences {
                 page_increment: 8,
             }),
         });
-        settings.bind('gap', gap, 'value', Gio.SettingsBindFlags.DEFAULT);
+        settings.bind(KEYS.GAP, gap, 'value', Gio.SettingsBindFlags.DEFAULT);
         layout.add(gap);
         page.add(layout);
 
