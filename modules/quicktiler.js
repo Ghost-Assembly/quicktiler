@@ -20,13 +20,7 @@ import { ACTIONS } from './actions.js';
 import { nearestNeighbour } from './neighbours.js';
 import { KEYS } from './settings.js';
 import { isFocusable, isPlaceable } from './windows.js';
-import {
-    MATCH_TOLERANCE,
-    matchZone,
-    nextZone,
-    projectZone,
-    zoneById,
-} from './zones.js';
+import { matchZone, nextZone, projectZone, zoneById } from './zones.js';
 
 /**
  * The facts isFocusable needs, and nothing more.
@@ -67,6 +61,23 @@ function describe(window) {
         allowsResize: window.allows_resize(),
     };
 }
+
+/**
+ * A window policy: the rule, and the facts that rule needs read off Mutter.
+ *
+ * Paired as one value rather than recovered at the call site. isFocusable
+ * consults only the manageability facts, so reading the placement ones is
+ * wasted work on the focus path — but that is a fact about the policy, and
+ * testing `accepts === isFocusable` to rediscover it silently picks the wrong
+ * reader for any predicate that is ever wrapped or composed, with no failure to
+ * notice: the extra facts are unused rather than wrong.
+ *
+ * @type {Readonly<{accepts: Function, read: Function}>}
+ */
+const FOCUS = Object.freeze({ accepts: isFocusable, read: describeManageable });
+
+/** The placement policy; see {@link FOCUS}. */
+const PLACE = Object.freeze({ accepts: isPlaceable, read: describe });
 
 /** Places windows into zones in response to keybindings. */
 export class QuickTiler {
@@ -274,12 +285,12 @@ export class QuickTiler {
     /**
      * The focused window, if it satisfies a policy.
      *
-     * @param {Function} accepts Predicate from modules/windows.js.
+     * @param {{accepts: Function, read: Function}} policy FOCUS or PLACE.
      * @returns {Meta.Window|null} The focused window, or null.
      */
-    _focused(accepts) {
+    _focused(policy) {
         const window = this._target ?? global.display.get_focus_window();
-        return accepts(describe(window)) ? window : null;
+        return policy.accepts(policy.read(window)) ? window : null;
     }
 
     /**
@@ -311,7 +322,7 @@ export class QuickTiler {
      * @returns {string|null} Zone id, or null if it is in none.
      */
     _currentZone(window, workArea) {
-        return matchZone(window.get_frame_rect(), workArea, this._gap, MATCH_TOLERANCE);
+        return matchZone(window.get_frame_rect(), workArea, this._gap);
     }
 
     /**
@@ -368,7 +379,7 @@ export class QuickTiler {
      * @param {string} group Cycle to walk: 'left', 'right' or 'center'.
      */
     _tile(group) {
-        const window = this._focused(isPlaceable);
+        const window = this._focused(PLACE);
         if (!window) return;
 
         const workArea = this._workArea(window);
@@ -390,7 +401,7 @@ export class QuickTiler {
      * setting, which is what maximizing is supposed to mean.
      */
     _toggleMaximize() {
-        const window = this._focused(isPlaceable);
+        const window = this._focused(PLACE);
         if (!window) return;
 
         // The conjunction, where _unmaximize uses the disjunction: a window
@@ -415,23 +426,20 @@ export class QuickTiler {
      *
      * @param {Meta.Window} window Window to search from.
      * @param {number} direction -1 for left, 1 for right.
-     * @param {Function} accepts Predicate a candidate must satisfy.
+     * @param {{accepts: Function, read: Function}} policy Policy a candidate
+     *   must satisfy; its reader is what each candidate is described with.
      * @returns {Meta.Window|null} The neighbour, if there is one.
      */
-    _neighbour(window, direction, accepts) {
+    _neighbour(window, direction, policy) {
         const workspace = window.get_workspace();
         if (!workspace) return null;
-
-        // isFocusable consults only the manageability facts, so reading the
-        // placement ones for every window on the workspace would be wasted.
-        const read = accepts === isFocusable ? describeManageable : describe;
 
         const candidates = [];
 
         for (const other of workspace.list_windows()) {
             if (other === window) continue;
             if (other.minimized) continue;
-            if (!accepts(read(other))) continue;
+            if (!policy.accepts(policy.read(other))) continue;
 
             candidates.push({
                 window: other,
@@ -453,10 +461,10 @@ export class QuickTiler {
      * @param {number} direction -1 for left, 1 for right.
      */
     _focusNeighbour(direction) {
-        const window = this._focused(isFocusable);
+        const window = this._focused(FOCUS);
         if (!window) return;
 
-        const neighbour = this._neighbour(window, direction, isFocusable);
+        const neighbour = this._neighbour(window, direction, FOCUS);
         if (neighbour) Main.activateWindow(neighbour);
     }
 
@@ -466,10 +474,10 @@ export class QuickTiler {
      * @param {number} direction -1 for left, 1 for right.
      */
     _swapNeighbour(direction) {
-        const window = this._focused(isPlaceable);
+        const window = this._focused(PLACE);
         if (!window) return;
 
-        const neighbour = this._neighbour(window, direction, isPlaceable);
+        const neighbour = this._neighbour(window, direction, PLACE);
         if (!neighbour) return;
 
         // Unmaximize both before reading their geometry. A maximized window's
@@ -494,7 +502,7 @@ export class QuickTiler {
      * @param {number} direction 1 for the next monitor, -1 for the previous.
      */
     _moveToMonitor(direction) {
-        const window = this._focused(isPlaceable);
+        const window = this._focused(PLACE);
         if (!window) return;
 
         const count = Main.layoutManager.monitors.length;
