@@ -123,6 +123,14 @@ describe('parseAccelerator', () => {
         expect(parseAccelerator('<Super>Left').key).toBe('left');
     });
 
+    it('reads a key that carries no modifiers at all', () => {
+        expect(parseAccelerator('F5')).toEqual({ modifiers: [], key: 'f5' });
+    });
+
+    it('takes the key from after the last modifier, not the first', () => {
+        expect(parseAccelerator('<Release><Super>x').key).toBe('x');
+    });
+
     it('orders every known modifier as MODIFIER_ORDER lists them', () => {
         const written = [...MODIFIER_ORDER].reverse().map(m => `<${m}>`);
         const { modifiers } = parseAccelerator(`${written.join('')}x`);
