@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
+import { acceleratorLabel } from '../modules/accelerator.js';
 import { ACTIONS, ACTION_KEYS } from '../modules/actions.js';
 
 const SCHEMA = fileURLToPath(
@@ -94,30 +95,21 @@ function schemaDefaults() {
 /**
  * Turn a gschema accelerator into the pieces documentation spells out.
  *
- * '<Super><Control><Shift>m' becomes ['super', 'ctrl', 'shift', 'm'], so the
+ * '<Super><Control><Shift>m' becomes ['ctrl', 'm', 'shift', 'super'], so the
  * comparison does not care whether prose writes Ctrl or Control, or which order
  * the modifiers appear in.
+ *
+ * The spelling comes from modules/accelerator.js rather than from a table kept
+ * here. That module renders the same shortcut into the quick settings menu, so
+ * sharing it is what stops the menu and the documentation from disagreeing
+ * about whether a key is called Left or \u2190 — the same argument
+ * modules/actions.js makes for the action list.
  *
  * @param {string} accelerator Accelerator in gschema form.
  * @returns {string[]} Lower-case parts, sorted.
  */
 function parts(accelerator) {
-    const named = new Map([
-        ['control', 'ctrl'],
-        ['bracketleft', '['],
-        ['bracketright', ']'],
-        ['left', '\u2190'],
-        ['right', '\u2192'],
-        ['up', '\u2191'],
-        ['down', '\u2193'],
-    ]);
-    const raw = [...accelerator.matchAll(/<([^>]+)>/g)].map(m => m[1]);
-    const key = accelerator.replace(/<[^>]+>/g, '');
-
-    return [...raw, key]
-        .map(part => part.toLowerCase())
-        .map(part => named.get(part) ?? part)
-        .sort();
+    return acceleratorLabel(accelerator).toLowerCase().split('+').sort();
 }
 
 /** Parts that are modifiers rather than a key in their own right. */
