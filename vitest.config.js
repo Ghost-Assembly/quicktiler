@@ -21,7 +21,13 @@ export default defineConfig({
             // unit test can only assert against stubs of the toolkit — that
             // tests the stubs, not the code. Kept identical to
             // sonar.coverage.exclusions so the two agree.
-            exclude: ['prefs.js'],
+            //
+            // tests/** is listed because `include` above did not keep a
+            // dynamically imported stub out of the report:
+            // tests/quicktiler-handlers.test.js pulls a stub in through
+            // vi.doMock and it turned up as production code. A stub counted
+            // either way is a number that means nothing.
+            exclude: ['prefs.js', 'tests/**'],
         },
     },
 
@@ -29,10 +35,27 @@ export default defineConfig({
     // stubs is what makes the Shell layer — and the five bugs fixed in it —
     // reachable from Vitest at all. The stubs live in tests/, so they are never
     // shipped and never counted as covered code.
+    //
+    // gi://Adw, gi://Gdk and gi://Gtk are deliberately absent. Only prefs.js
+    // imports them, and it is excluded below and never imported by a test. The
+    // day this list needs one of them is the day a decision has leaked into the
+    // preferences widgets, and the missing alias is how we find out.
     resolve: {
         alias: [
+            { find: 'gi://Clutter', replacement: stub('gi-clutter') },
+            { find: 'gi://Gio', replacement: stub('gi-gio') },
+            { find: 'gi://GObject', replacement: stub('gi-gobject') },
             { find: 'gi://Meta', replacement: stub('gi-meta') },
             { find: 'gi://Shell', replacement: stub('gi-shell') },
+            { find: 'gi://St', replacement: stub('gi-st') },
+            {
+                find: 'resource:///org/gnome/shell/ui/popupMenu.js',
+                replacement: stub('shell-popupmenu'),
+            },
+            {
+                find: 'resource:///org/gnome/shell/ui/quickSettings.js',
+                replacement: stub('shell-quicksettings'),
+            },
             {
                 find: 'resource:///org/gnome/shell/ui/main.js',
                 replacement: stub('shell-main'),
