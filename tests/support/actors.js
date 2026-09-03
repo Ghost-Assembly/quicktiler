@@ -2,8 +2,13 @@
 //
 // The stubs under tests/stubs/ are built on this. It exists so that
 // tests/panel.test.js can assert QuickTiler's own bookkeeping — how many handlers
-// are connected, how many are left after destroy, what style was applied, which
-// children were added — rather than asserting that a stub behaves like a stub.
+// are connected, how many are left after destroy, which children were added —
+// rather than asserting that a stub behaves like a stub.
+//
+// It models only what modules/panel.js actually touches. That is the same rule
+// the `destroyed` note below records the cost of breaking: a stub method with a
+// plausible name is an invitation for production code to start depending on it,
+// and the suite cannot tell the difference between a real API and a fake one.
 //
 // GObject subclasses in gnome-shell are constructed through _init rather than a
 // constructor, so the base here calls _init from its constructor and
@@ -16,8 +21,8 @@ export const liveHandlers = new Set();
 
 // owner -> Set of {actor, id}. GJS's connectObject ties a handler's lifetime
 // to the owner wherever it was connected, so disconnectObject(owner) has to
-// reach handlers on objects the owner never held a reference to — a gesture
-// added to a menu row, say. A per-actor map alone would miss those, and the
+// reach handlers on objects the owner never held a reference to — a handler
+// connected on a menu row, say. A per-actor map alone would miss those, and the
 // panel would look leak-free here while leaking in a real Shell.
 const byOwner = new Map();
 
@@ -33,11 +38,6 @@ let nextHandlerId = 1;
 export class FakeActor {
     constructor(...args) {
         this.children = [];
-        this.actions = [];
-        this.style = null;
-        this.visible = true;
-        this.reactive = true;
-        this.styleClasses = new Set();
         this._parentActor = null;
 
         // Underscored on purpose. This is the stub's own bookkeeping, not an
@@ -103,11 +103,6 @@ export class FakeActor {
         child._parentActor = this;
     }
 
-    remove_child(child) {
-        this.children = this.children.filter(existing => existing !== child);
-        child._parentActor = null;
-    }
-
     remove_all_children() {
         for (const child of this.children) child._parentActor = null;
         this.children = [];
@@ -118,81 +113,12 @@ export class FakeActor {
         return this._parentActor;
     }
 
-    get_children() {
-        return [...this.children];
-    }
-
-    add_action(action) {
-        this.actions.push(action);
-    }
-
-    add_style_class_name(name) {
-        this.styleClasses.add(name);
-    }
-
-    remove_style_class_name(name) {
-        this.styleClasses.delete(name);
-    }
-
-    add_style_pseudo_class() {}
-    remove_style_pseudo_class() {}
-
-    set_style(style) {
-        this.style = style;
-    }
-
-    get_theme_node() {
-        // Enough of a theme node for modules/layout.js's output to be read
-        // back the way St would read it.
-        const match = /max-height:\s*(\d+)px/.exec(this.style ?? '');
-        return { get_max_height: () => (match ? Number(match[1]) : -1) };
-    }
-
-    get_transformed_position() {
-        return [0, this.transformedTop ?? 0];
-    }
-
-    get_preferred_height() {
-        return [0, this.naturalHeight ?? 0];
-    }
-
-    navigate_focus() {
-        this.focusNavigated = true;
-        return true;
-    }
-
-    show() {
-        this.visible = true;
-    }
-
-    hide() {
-        this.visible = false;
-    }
-
     destroy() {
         this._wasDestroyed = true;
         this._parentActor = null;
         for (const id of [...this.handlers.keys()]) this.disconnect(id);
 
-        // Clutter disposes an actor's actions with the actor, so a gesture
-        // added to a row goes when the row does.
-        for (const action of this.actions) action.destroy?.();
-        this.actions = [];
-
         for (const child of this.children) child.destroy?.();
         this.children = [];
     }
-}
-
-/** Depth-first walk, for finding a row in a built menu. */
-export function descendants(actor) {
-    const found = [];
-    const visit = node => {
-        for (const child of node.children ?? []) {
-            found.push(child);
-            visit(child);
-        }
-    };
-    visit(actor);
-    return found;
 }
