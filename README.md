@@ -3,9 +3,12 @@
 Keyboard-driven zone tiling for GNOME Shell.
 
 Press a direction repeatedly and the focused window cycles through the zones on
-that side. There is no overlay, no grid picker and no panel button — between
-keypresses the extension creates no actors, runs no timers and connects to no
-global signals, so it costs nothing at all.
+that side. There is no overlay and no grid picker: between keypresses the
+extension runs no timers and connects to no global signals.
+
+There is a quick settings tile, listing every action with the shortcut it
+currently holds — so the panel teaches the keyboard rather than replacing it.
+Turn it off and the extension holds no actors at all.
 
 **[Documentation →](https://napalm255.github.io/quicktiler/)** — zones, architecture,
 testing, packaging and releasing.
@@ -44,6 +47,25 @@ and there is no state to go stale.
 <kbd>Super</kbd>+<kbd>Ctrl</kbd> moves _windows_; bare <kbd>Super</kbd>+bracket
 moves _focus_ without touching anything. Both focus and swap cross monitors.
 Change any of them, and the gap between windows, in the preferences window.
+
+## Quick settings
+
+The tile sits in the system menu, under the same panel as the volume and
+network controls.
+
+Clicking the tile pauses the keyboard shortcuts and releases every accelerator,
+so they go back to whatever else claims them; clicking it again takes them back.
+The header says which state it is in.
+
+Clicking the arrow opens the menu, which lists the four groups of actions —
+tile, focus, swap and monitor — each row showing its current shortcut and acting
+on the focused window when clicked. Rows keep working while the shortcuts are
+paused, because the pause is about the keyboard only.
+
+Two switches in the preferences window control it: **Show the tile**, which
+decides whether it is built at all, and **Keyboard shortcuts**, the same pause
+the tile writes. The pause switch is in the preferences window as well as on the
+tile because it has to be — with the tile hidden, it is the only way back.
 
 ## Install
 
@@ -100,10 +122,12 @@ just test-live  # headless Shell smoke test, then the packer check
 just docs       # serve the documentation site locally
 ```
 
-`modules/zones.js`, `windows.js`, `neighbours.js`, `actions.js` and
-`shortcuts.js` import nothing at all, so Vitest runs them on plain Node.
-`modules/quicktiler.js` is the only file that touches Meta, Shell or Main, and is
-unit-tested through stubs aliased in `vitest.config.js`. The
+`modules/zones.js`, `windows.js`, `neighbours.js`, `actions.js`,
+`shortcuts.js`, `accelerator.js` and `settings.js` import nothing at all, so
+Vitest runs them on plain Node. `modules/quicktiler.js` is the only file that
+touches Meta or Shell, and `modules/panel.js` the only one that touches St,
+Clutter, PopupMenu or QuickSettings; both are unit-tested through stubs aliased
+in `vitest.config.js`. The
 [architecture](https://napalm255.github.io/quicktiler/#architecture) and
 [testing](https://napalm255.github.io/quicktiler/#testing) sections of the
 documentation go into why.

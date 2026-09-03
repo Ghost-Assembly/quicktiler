@@ -45,8 +45,10 @@ LOG="$WORK/shell.log"
 
 EXT_DIR="$XDG_DATA_HOME/gnome-shell/extensions/$UUID"
 mkdir -p "$EXT_DIR"
+# icons/ included: without it Gio.icon_new_for_string points at a path that does
+# not exist, the tile draws no icon, and nothing is logged to say so.
 cp -r "$REPO_ROOT"/metadata.json "$REPO_ROOT"/extension.js "$REPO_ROOT"/prefs.js \
-      "$REPO_ROOT"/modules "$REPO_ROOT"/schemas "$EXT_DIR/"
+      "$REPO_ROOT"/modules "$REPO_ROOT"/schemas "$REPO_ROOT"/icons "$EXT_DIR/"
 glib-compile-schemas "$EXT_DIR/schemas"
 
 gsettings set org.gnome.shell disable-user-extensions false
