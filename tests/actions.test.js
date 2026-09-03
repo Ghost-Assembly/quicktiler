@@ -3,7 +3,13 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 import { acceleratorLabel } from '../modules/accelerator.js';
-import { ACTIONS, ACTIONS_BY_GROUP, ACTION_KEYS, GROUPS } from '../modules/actions.js';
+import {
+    ACTIONS,
+    ACTIONS_BY_GROUP,
+    ACTION_KEYS,
+    GROUPS,
+    OPERATIONS,
+} from '../modules/actions.js';
 import { read, schemaDefaults, schemaKeys } from './support/schema.js';
 
 const README = fileURLToPath(new URL('../README.md', import.meta.url));
@@ -38,6 +44,36 @@ describe('ACTIONS', () => {
     it('is frozen, so no caller can reorder or extend it', () => {
         expect(Object.isFrozen(ACTIONS)).toBe(true);
         expect(ACTIONS.every(action => Object.isFrozen(action))).toBe(true);
+    });
+});
+
+describe('OPERATIONS', () => {
+    // The check that replaces a console.warn. modules/quicktiler.js maps an
+    // action to a behaviour through `op`; when that mapping was ten hand-written
+    // key strings, an action added to this list and the gschema but not to the
+    // handler table was configurable, bindable and inert, and said so only in
+    // the journal. Here it fails the build.
+    it('gives every action an operation it declares', () => {
+        for (const action of ACTIONS) expect(OPERATIONS).toContain(action.op);
+    });
+
+    it('declares no operation that no action uses', () => {
+        const used = new Set(ACTIONS.map(action => action.op));
+
+        expect([...OPERATIONS].filter(op => !used.has(op))).toEqual([]);
+    });
+
+    it('gives an argument to every action whose operation takes one', () => {
+        // 'maximize' is the only operation with nothing to vary: there is one
+        // way to maximize a window, where tiling has a cycle and the rest have
+        // a direction.
+        for (const action of ACTIONS)
+            if (action.op === 'maximize') expect(action.arg).toBeUndefined();
+            else expect(action.arg).toBeDefined();
+    });
+
+    it('is frozen, so no caller can reorder or extend it', () => {
+        expect(Object.isFrozen(OPERATIONS)).toBe(true);
     });
 });
 

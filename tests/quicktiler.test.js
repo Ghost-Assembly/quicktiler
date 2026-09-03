@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import Meta from 'gi://Meta';
 
-import { ACTION_KEYS } from '../modules/actions.js';
+import { ACTIONS, ACTION_KEYS, OPERATIONS } from '../modules/actions.js';
 import { QuickTiler } from '../modules/quicktiler.js';
 import { KEYS } from '../modules/settings.js';
 import { projectZone, zoneById } from '../modules/zones.js';
@@ -178,6 +178,28 @@ describe('QuickTiler', () => {
     });
 
     describe('run', () => {
+        // The other half of the guard tests/actions.test.js holds up. That file
+        // proves every action names an operation modules/actions.js declares;
+        // this proves the Shell layer actually implements each of them, so an
+        // action can no longer be bindable and inert.
+        it('accepts every action in the shared list', () => {
+            start();
+
+            for (const key of ACTION_KEYS) expect(quicktiler.run(key)).toBe(true);
+
+            expect(console.warn).not.toHaveBeenCalled();
+        });
+
+        it('implements every operation the action list declares', () => {
+            start();
+            const performed = new Set();
+
+            for (const action of ACTIONS)
+                if (quicktiler.run(action.key)) performed.add(action.op);
+
+            expect([...performed].sort()).toEqual([...OPERATIONS].sort());
+        });
+
         it('performs the action a keypress would', () => {
             const world = start();
             const window = world.workspace.add(new FakeWindow())[0];

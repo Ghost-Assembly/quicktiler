@@ -16,7 +16,7 @@ import Shell from 'gi://Shell';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-import { ACTIONS } from './actions.js';
+import { ACTIONS, ACTIONS_BY_KEY } from './actions.js';
 import { nearestNeighbour } from './neighbours.js';
 import { KEYS } from './settings.js';
 import { isFocusable, isPlaceable } from './windows.js';
@@ -92,29 +92,49 @@ export class QuickTiler {
         this._shortcutsChangedId = 0;
         this._bindings = [];
         this._bound = false;
-        this._target = null;
 
-        // Built here rather than inside enable(), where it used to live, so
-        // that run() can reach it — the quick settings menu performs the same
-        // actions the keybindings do and must not carry a second copy of this
-        // list. The closures capture `this`, so the constructor is the only
-        // place it can be built once.
+        // One entry per operation in modules/actions.js's OPERATIONS, not one
+        // per action: the ten actions are five behaviours and an argument, and
+        // which action carries which argument is that file's business, not
+        // this one's. What is left here is the part that needs a live Shell.
         //
-        // Keyed by the same strings modules/actions.js and the gschema use, and
-        // driven from that list rather than from a second one written out here.
-        // A Map rather than an object literal for the reason given in
+        // Each operation declares the policy its window must satisfy, so run()
+        // can resolve the window once instead of every operation opening with
+        // the same two-line prologue.
+        //
+        // Built here rather than in enable() because the closures capture
+        // `this`. A Map rather than an object literal for the reason given in
         // modules/zones.js: a bare index resolves inherited keys.
-        this._handlers = new Map([
-            ['tile-left', () => this._tile('left')],
-            ['tile-right', () => this._tile('right')],
-            ['tile-center', () => this._tile('center')],
-            ['tile-maximize', () => this._toggleMaximize()],
-            ['focus-left', () => this._focusNeighbour(-1)],
-            ['focus-right', () => this._focusNeighbour(1)],
-            ['swap-left', () => this._swapNeighbour(-1)],
-            ['swap-right', () => this._swapNeighbour(1)],
-            ['move-monitor-next', () => this._moveToMonitor(1)],
-            ['move-monitor-prev', () => this._moveToMonitor(-1)],
+        this._operations = new Map([
+            [
+                'tile',
+                { policy: PLACE, run: (window, cycle) => this._tile(window, cycle) },
+            ],
+            [
+                'maximize',
+                { policy: PLACE, run: window => this._toggleMaximize(window) },
+            ],
+            [
+                'focus',
+                {
+                    policy: FOCUS,
+                    run: (window, direction) => this._focusNeighbour(window, direction),
+                },
+            ],
+            [
+                'swap',
+                {
+                    policy: PLACE,
+                    run: (window, direction) => this._swapNeighbour(window, direction),
+                },
+            ],
+            [
+                'monitor',
+                {
+                    policy: PLACE,
+                    run: (window, direction) => this._moveToMonitor(window, direction),
+                },
+            ],
         ]);
     }
 
@@ -132,12 +152,12 @@ export class QuickTiler {
      *
      * `target` exists for the quick settings menu. Opening it takes a Clutter
      * grab, and Mutter's focus window can be null for as long as the grab is
-     * held — so a menu row that relied on _focused() reading the display could
-     * silently do nothing, which is the failure mode modules/windows.js exists
-     * to avoid. The Panel passes the window it last saw focused instead. The
-     * target still goes through the same policy predicate as a focused window,
-     * so a window that has since closed is rejected exactly as one that was
-     * never eligible.
+     * held — so a menu row that relied on reading the display could silently do
+     * nothing, which is the failure mode modules/windows.js exists to avoid.
+     * The Panel passes the window it last saw focused instead. It is an
+     * argument rather than a field so it cannot outlive the call: the target
+     * still goes through the same policy as a focused window, so a window that
+     * has since closed is rejected exactly as one that was never eligible.
      *
      * @param {string} key Schema key of the action, as modules/actions.js spells it.
      * @param {Meta.Window|null} [target] Window to act on, or null to use the
@@ -145,21 +165,19 @@ export class QuickTiler {
      * @returns {boolean} False if no such action exists.
      */
     run(key, target = null) {
-        const handler = this._handlers.get(key);
+        const action = ACTIONS_BY_KEY.get(key);
+        const operation = action && this._operations.get(action.op);
 
-        if (!handler) {
+        if (!operation) {
             console.warn(`[quicktiler] no handler for action ${key}`);
             return false;
         }
 
-        this._target = target;
-        try {
-            handler();
-        } finally {
-            // Cleared however the handler left, so a throw cannot leave a stale
-            // window standing in for the focused one on the next keypress.
-            this._target = null;
-        }
+        // Resolved once, here. Every operation used to open by asking for the
+        // focused window and returning if there was none, which is a guard the
+        // sixth one would have had to remember.
+        const window = this._focused(operation.policy, target);
+        if (window) operation.run(window, action.arg);
 
         return true;
     }
@@ -238,14 +256,13 @@ export class QuickTiler {
             this._bindings.push(key);
         };
 
-        for (const { key } of ACTIONS) {
-            // tests/actions.test.js keeps ACTIONS and the gschema in step, but
-            // nothing off-Shell can check the handler map, so say so loudly
-            // rather than leaving a shortcut that is configurable and silently
-            // inert. Checked here as well as in run(): an action nothing can
-            // perform should be reported when it is registered, not only if
-            // someone presses it.
-            if (!this._handlers.has(key)) {
+        for (const { key, op } of ACTIONS) {
+            // tests/actions.test.js now keeps every action's `op` inside
+            // OPERATIONS and tests/quicktiler.test.js keeps this map covering
+            // all of them, so this is no longer the only guard — but an action
+            // nothing can perform should still be reported when it is
+            // registered rather than only when someone presses it.
+            if (!this._operations.has(op)) {
                 console.warn(`[quicktiler] no handler for action ${key}`);
                 continue;
             }
@@ -286,10 +303,12 @@ export class QuickTiler {
      * The focused window, if it satisfies a policy.
      *
      * @param {{accepts: Function, read: Function}} policy FOCUS or PLACE.
-     * @returns {Meta.Window|null} The focused window, or null.
+     * @param {Meta.Window|null} [target] Window to use instead of the focused
+     *   one; see run().
+     * @returns {Meta.Window|null} The window, or null if it satisfies no policy.
      */
-    _focused(policy) {
-        const window = this._target ?? global.display.get_focus_window();
+    _focused(policy, target = null) {
+        const window = target ?? global.display.get_focus_window();
         return policy.accepts(policy.read(window)) ? window : null;
     }
 
@@ -374,20 +393,18 @@ export class QuickTiler {
     }
 
     /**
-     * Advance the focused window through a direction's zone cycle.
+     * Advance a window through a direction's zone cycle.
      *
-     * @param {string} group Cycle to walk: 'left', 'right' or 'center'.
+     * @param {Meta.Window} window Window to place, already policy-checked.
+     * @param {string} cycle Cycle to walk: 'left', 'right' or 'center'.
      */
-    _tile(group) {
-        const window = this._focused(PLACE);
-        if (!window) return;
-
+    _tile(window, cycle) {
         const workArea = this._workArea(window);
         if (!workArea) return;
 
         this._place(
             window,
-            nextZone(this._currentZone(window, workArea), group),
+            nextZone(this._currentZone(window, workArea), cycle),
             workArea,
         );
     }
@@ -399,11 +416,10 @@ export class QuickTiler {
      * zone, so restore returns the window to its pre-maximize geometry and the
      * state stays in sync with the rest of GNOME. It therefore ignores the gap
      * setting, which is what maximizing is supposed to mean.
+     *
+     * @param {Meta.Window} window Window to maximize, already policy-checked.
      */
-    _toggleMaximize() {
-        const window = this._focused(PLACE);
-        if (!window) return;
-
+    _toggleMaximize(window) {
         // The conjunction, where _unmaximize uses the disjunction: a window
         // maximized in only one direction should finish maximizing rather than
         // restore, which is what GNOME's own maximize key does.
@@ -458,25 +474,21 @@ export class QuickTiler {
     /**
      * Move focus to the neighbouring window without moving anything.
      *
+     * @param {Meta.Window} window Window to search from, already policy-checked.
      * @param {number} direction -1 for left, 1 for right.
      */
-    _focusNeighbour(direction) {
-        const window = this._focused(FOCUS);
-        if (!window) return;
-
+    _focusNeighbour(window, direction) {
         const neighbour = this._neighbour(window, direction, FOCUS);
         if (neighbour) Main.activateWindow(neighbour);
     }
 
     /**
-     * Exchange the focused window's geometry with its neighbour's.
+     * Exchange a window's geometry with its neighbour's.
      *
+     * @param {Meta.Window} window Window to swap, already policy-checked.
      * @param {number} direction -1 for left, 1 for right.
      */
-    _swapNeighbour(direction) {
-        const window = this._focused(PLACE);
-        if (!window) return;
-
+    _swapNeighbour(window, direction) {
         const neighbour = this._neighbour(window, direction, PLACE);
         if (!neighbour) return;
 
@@ -497,14 +509,12 @@ export class QuickTiler {
     }
 
     /**
-     * Move the focused window to an adjacent monitor, keeping its zone.
+     * Move a window to an adjacent monitor, keeping its zone.
      *
+     * @param {Meta.Window} window Window to move, already policy-checked.
      * @param {number} direction 1 for the next monitor, -1 for the previous.
      */
-    _moveToMonitor(direction) {
-        const window = this._focused(PLACE);
-        if (!window) return;
-
+    _moveToMonitor(window, direction) {
         const count = Main.layoutManager.monitors.length;
         if (count < 2) return;
 
