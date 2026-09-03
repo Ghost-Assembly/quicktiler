@@ -3,6 +3,34 @@
   <schema id="org.gnome.shell.extensions.quicktiler"
           path="/org/gnome/shell/extensions/quicktiler/">
 
+    <!--
+      The two coarse switches. Both are written by the quick settings tile and
+      by the preferences window; modules/settings.js names them once and
+      tests/settings.test.js fails if this file and that one disagree.
+    -->
+
+    <key type="b" name="shortcuts-enabled">
+      <default>true</default>
+      <summary>Keyboard shortcuts</summary>
+      <description>
+        Whether QuickTiler registers its keybindings with Mutter. Turning this
+        off releases every one of them, so the accelerators go back to whatever
+        else claims them. The quick settings menu keeps working, because the
+        pause is about the keyboard and nothing else.
+      </description>
+    </key>
+
+    <key type="b" name="show-quick-settings">
+      <default>true</default>
+      <summary>Show the quick settings tile</summary>
+      <description>
+        Add a QuickTiler tile to the system menu, listing every action with the
+        shortcut it currently holds. Turning this off builds no actor at all,
+        which is what lets the extension go back to costing nothing between
+        keypresses.
+      </description>
+    </key>
+
     <key type="i" name="gap">
       <default>8</default>
       <range min="0" max="200"/>

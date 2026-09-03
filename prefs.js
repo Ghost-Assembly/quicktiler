@@ -16,6 +16,7 @@ import {
 // which has no access to gnome-shell's resource:// modules. Sharing it is what
 // stops the action list here from drifting away from the one quicktiler.js binds.
 import { ACTIONS } from './modules/actions.js';
+import { KEYS } from './modules/settings.js';
 import {
     CAPTURE_ASSIGN,
     CAPTURE_CANCEL,
@@ -147,6 +148,22 @@ export default class QuickTilerPreferences extends ExtensionPreferences {
         const settings = this.getSettings();
         const page = new Adw.PreferencesPage();
 
+        // First, because it is the switch that decides whether the tile the
+        // extension is named for exists at all.
+        const panel = new Adw.PreferencesGroup({ title: _('Quick settings') });
+        const tile = new Adw.SwitchRow({
+            title: _('Show the tile'),
+            subtitle: _('Lists every action, with its shortcut, in the system menu'),
+        });
+        settings.bind(
+            KEYS.SHOW_QUICK_SETTINGS,
+            tile,
+            'active',
+            Gio.SettingsBindFlags.DEFAULT,
+        );
+        panel.add(tile);
+        page.add(panel);
+
         const layout = new Adw.PreferencesGroup({ title: _('Layout') });
         const gap = new Adw.SpinRow({
             title: _('Gap'),
@@ -168,6 +185,21 @@ export default class QuickTilerPreferences extends ExtensionPreferences {
                 'Press a direction repeatedly to cycle through that side’s zones.',
             ),
         });
+        // The master switch sits above the per-action rows, because that is what
+        // it is. It is also the way back when the tile is hidden: with no tile
+        // in the panel, this row is the only thing that can un-pause.
+        const active = new Adw.SwitchRow({
+            title: _('Keyboard shortcuts'),
+            subtitle: _('Releases every shortcut until you turn them back on'),
+        });
+        settings.bind(
+            KEYS.SHORTCUTS_ENABLED,
+            active,
+            'active',
+            Gio.SettingsBindFlags.DEFAULT,
+        );
+        shortcuts.add(active);
+
         // _() is called here rather than in modules/actions.js, which must stay
         // free of imports, and at row-build time rather than at module load so
         // the gettext domain is already bound.
