@@ -11,6 +11,20 @@
 // documentation site against, so the tables below are the single place that
 // decides how a shortcut is written down anywhere in the project.
 
+// A Map rather than an object literal for the reason given in modules/zones.js:
+// a bare index resolves inherited keys, so a modifier or key named
+// 'constructor' or '__proto__' would return something that is not a label.
+//
+// Declared in render order, because MODIFIER_ORDER below is its key order.
+const MODIFIER_LABELS = new Map([
+    ['super', 'Super'],
+    ['ctrl', 'Ctrl'],
+    ['alt', 'Alt'],
+    ['shift', 'Shift'],
+    ['meta', 'Meta'],
+    ['hyper', 'Hyper'],
+]);
+
 /**
  * Modifier order as rendered, which is deliberately not the order they were
  * written in.
@@ -22,41 +36,34 @@
  * reading "Super+Ctrl+…", so a fixed order is used and rebinding cannot change
  * how anything is spelled.
  *
+ * Derived from MODIFIER_LABELS rather than written out again: parseAccelerator
+ * orders by this list and partitions unknown modifiers by that map, so two
+ * hand-maintained copies could disagree about which modifiers are known.
+ *
  * @type {ReadonlyArray<string>}
  */
-export const MODIFIER_ORDER = Object.freeze([
-    'super',
-    'ctrl',
-    'alt',
-    'shift',
-    'meta',
-    'hyper',
-]);
+export const MODIFIER_ORDER = Object.freeze([...MODIFIER_LABELS.keys()]);
 
-// A Map rather than an object literal for the reason given in modules/zones.js:
-// a bare index resolves inherited keys, so a modifier or key named
-// 'constructor' or '__proto__' would return something that is not a label.
+// Only the spellings that map to a different name. parseAccelerator falls back
+// to the token itself, so an identity entry here would decide nothing.
 const MODIFIER_ALIASES = new Map([
     ['primary', 'ctrl'],
     ['control', 'ctrl'],
-    ['ctrl', 'ctrl'],
     ['mod1', 'alt'],
-    ['alt', 'alt'],
     ['mod4', 'super'],
-    ['super', 'super'],
-    ['shift', 'shift'],
-    ['meta', 'meta'],
-    ['hyper', 'hyper'],
 ]);
 
-const MODIFIER_LABELS = new Map([
-    ['super', 'Super'],
-    ['ctrl', 'Ctrl'],
-    ['alt', 'Alt'],
-    ['shift', 'Shift'],
-    ['meta', 'Meta'],
-    ['hyper', 'Hyper'],
-]);
+/**
+ * Upper-case the first character, leaving the rest alone.
+ *
+ * The one rule for rendering a token neither lookup table names — an unknown
+ * modifier and an unknown key name are the same problem, so they are spelled
+ * the same way.
+ *
+ * @param {string} word Token to capitalise.
+ * @returns {string} The token, first character upper-cased.
+ */
+const capitalise = word => word.charAt(0).toUpperCase() + word.slice(1);
 
 // Gdk key names whose display text is not simply the name capitalised. The
 // arrows are the ones that matter: "Super+Ctrl+Left" beside a table that says
@@ -145,8 +152,7 @@ function keyLabel(key) {
     if ([...key].length === 1) return key.toUpperCase();
     if (/^0x[0-9a-f]+$/.test(key)) return key;
 
-    const spaced = key.replaceAll('_', ' ');
-    return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+    return capitalise(key.replaceAll('_', ' '));
 }
 
 /**
@@ -167,23 +173,35 @@ export function acceleratorLabel(accelerator) {
     if (!label) return '';
 
     const parts = modifiers.map(
-        modifier =>
-            MODIFIER_LABELS.get(modifier) ??
-            modifier.charAt(0).toUpperCase() + modifier.slice(1),
+        modifier => MODIFIER_LABELS.get(modifier) ?? capitalise(modifier),
     );
 
     return [...parts, label].join('+');
 }
 
 /**
- * The display text for a keybinding as GSettings actually stores it.
+ * The accelerator a keybinding holds, as GSettings actually stores it.
  *
  * Keybinding keys are `as`, and Mutter uses the first entry. A key that has
  * never been set, or that the preferences window cleared, is an empty array.
+ *
+ * Exported because prefs.js needs the raw accelerator rather than the rendered
+ * label — Gtk.ShortcutLabel does its own rendering. Written here so that the
+ * array shape is decoded in one module instead of at each call site.
+ *
+ * @param {string[]} bindings Accelerators for one action.
+ * @returns {string} The accelerator, or '' if the action is unbound.
+ */
+export function acceleratorOf(bindings) {
+    return bindings?.[0] ?? '';
+}
+
+/**
+ * The display text for a keybinding as GSettings actually stores it.
  *
  * @param {string[]} bindings Accelerators for one action.
  * @returns {string} Display text, or '' if the action is unbound.
  */
 export function bindingLabel(bindings) {
-    return acceleratorLabel(bindings?.[0] ?? '');
+    return acceleratorLabel(acceleratorOf(bindings));
 }
