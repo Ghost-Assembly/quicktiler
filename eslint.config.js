@@ -52,6 +52,17 @@ export default [
         },
     },
     {
+        // scripts/pack-check.sh runs this one under plain gjs, outside
+        // gnome-shell: the GJS globals, but no `global`, which the Shell
+        // provides and a standalone gjs does not.
+        files: ['scripts/*.js'],
+        languageOptions: {
+            ecmaVersion: 2022,
+            sourceType: 'module',
+            globals: gjsGlobals,
+        },
+    },
+    {
         // Tooling and tests: run on Node.
         files: ['tests/**/*.js', '*.config.js', 'eslint.config.js'],
         languageOptions: {

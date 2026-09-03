@@ -7,7 +7,9 @@
 
 import Meta from 'gi://Meta';
 
+import { KEYS } from '../../modules/settings.js';
 import * as Main from '../stubs/shell-main.js';
+import { FakeActor } from './actors.js';
 
 let nextSequence = 1;
 
@@ -166,12 +168,22 @@ export function createWorld(workAreas = [{ x: 0, y: 0, width: 1920, height: 1080
     Main.layoutManager.monitors = workAreas.map(() => ({}));
 
     let focused = null;
-    globalThis.global = { display: { get_focus_window: () => focused } };
+
+    // A FakeActor rather than a plain object, because modules/panel.js connects
+    // to notify::focus-window on it. Going through FakeActor is what puts that
+    // handler in liveHandlers, so a panel that forgets to disconnect it fails
+    // the teardown assertions instead of leaking quietly.
+    const display = new FakeActor();
+    display.get_focus_window = () => focused;
+
+    globalThis.global = { display };
 
     return {
         workspace,
+        display,
         focus(window) {
             focused = window;
+            display.emit('notify::focus-window', display);
         },
     };
 }
@@ -182,17 +194,41 @@ export function createWorld(workAreas = [{ x: 0, y: 0, width: 1920, height: 1080
  * @param {object} [values] Initial values by key.
  * @returns {object} Gio.Settings-shaped fake.
  */
-export function createSettings(values = { gap: 8 }) {
-    const store = new Map(Object.entries(values));
+export function createSettings(values = {}) {
+    // Merged over the defaults rather than replacing them. createSettings({ gap:
+    // 8 }) must still answer get_boolean('shortcuts-enabled'), or enable() binds
+    // nothing and every caller that only cared about the gap breaks.
+    const store = new Map([
+        [KEYS.GAP, 8],
+        [KEYS.SHORTCUTS_ENABLED, true],
+        [KEYS.SHOW_QUICK_SETTINGS, true],
+        ...Object.entries(values),
+    ]);
     const handlers = new Map();
     let nextId = 1;
+
+    /**
+     * Store a value and fire the matching changed:: handlers, as GSettings does.
+     *
+     * @param {string} key Settings key.
+     * @param {*} value New value.
+     */
+    const write = (key, value) => {
+        store.set(key, value);
+        for (const { signal, handler } of [...handlers.values()])
+            if (signal === `changed::${key}`) handler();
+    };
 
     return {
         connected: handlers,
         get_int: key => store.get(key),
+        get_boolean: key => Boolean(store.get(key)),
+        set_boolean(key, value) {
+            write(key, value);
+        },
         get_strv: key => store.get(key) ?? [],
         set_strv(key, value) {
-            store.set(key, value);
+            write(key, value);
         },
         connect(signal, handler) {
             const id = nextId++;
@@ -209,9 +245,7 @@ export function createSettings(values = { gap: 8 }) {
          * @param {*} value New value.
          */
         emitChange(key, value) {
-            store.set(key, value);
-            for (const { signal, handler } of handlers.values())
-                if (signal === `changed::${key}`) handler();
+            write(key, value);
         },
     };
 }

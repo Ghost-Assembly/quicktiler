@@ -1,8 +1,10 @@
 // Stand-in for resource:///org/gnome/shell/ui/main.js.
 //
 // A module singleton, because that is what the real one is and what
-// modules/quicktiler.js imports. Tests must call reset() in beforeEach, or state
-// leaks between them.
+// modules/quicktiler.js and modules/panel.js import. Tests must call reset() in
+// beforeEach, or state leaks between them.
+
+import { FakeActor } from '../support/actors.js';
 
 /** Keybindings currently registered, by schema key. */
 export const registered = new Map();
@@ -50,6 +52,23 @@ export const wm = {
 
 export const layoutManager = { monitors: [{}] };
 
+/** Every addExternalIndicator call, in order, for asserting on placement. */
+export const externalIndicators = [];
+
+/**
+ * The quick settings area modules/panel.js installs its tile into.
+ *
+ * A FakeActor rather than a plain object, because the panel reads `mapped` and
+ * `reactive` off it and a test has to be able to change them.
+ */
+export const quickSettings = new FakeActor();
+
+quickSettings.addExternalIndicator = (indicator, colSpan = 1) => {
+    externalIndicators.push({ indicator, colSpan });
+};
+
+export const panel = { statusArea: { quickSettings } };
+
 /**
  * @param {object} window Window to focus.
  */
@@ -65,6 +84,9 @@ export function reset() {
     activated.length = 0;
     refuse.clear();
     layoutManager.monitors = [{}];
+    externalIndicators.length = 0;
+    quickSettings.mapped = true;
+    quickSettings.reactive = true;
 }
 
 /**
