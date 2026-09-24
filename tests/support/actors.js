@@ -13,7 +13,7 @@
 // GObject subclasses in gnome-shell are constructed through _init rather than a
 // constructor, so the base here calls _init from its constructor and
 // registerClass is the identity. That is why nothing in modules/panel.js may
-// use class fields: they initialise after super() returns, which is after
+// use class fields: they initialize after super() returns, which is after
 // _init has already run — exactly as in real GJS.
 
 /** Handlers connected anywhere, so a test can prove they were all released. */
@@ -34,7 +34,7 @@ export function resetActors() {
 
 let nextHandlerId = 1;
 
-/** The behaviour every fake actor and menu item shares. */
+/** The behavior every fake actor and menu item shares. */
 export class FakeActor {
     constructor(...args) {
         this.children = [];

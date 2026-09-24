@@ -36,7 +36,7 @@
       <range min="0" max="200"/>
       <summary>Gap</summary>
       <description>
-        Pixels between neighbouring tiled windows and between a tiled window and
+        Pixels between neighboring tiled windows and between a tiled window and
         the edge of the work area.
       </description>
     </key>
@@ -63,9 +63,9 @@
 
     <key type="as" name="tile-center">
       <default><![CDATA[['<Super><Control>Up']]]></default>
-      <summary>Tile centre</summary>
+      <summary>Tile center</summary>
       <description>
-        Cycle the focused window through the centre zones: half, top third, then
+        Cycle the focused window through the center zones: half, top third, then
         bottom two thirds.
       </description>
     </key>
@@ -91,13 +91,13 @@
     <key type="as" name="swap-left">
       <default><![CDATA[['<Super><Control>bracketleft']]]></default>
       <summary>Swap left</summary>
-      <description>Exchange the focused window with its left neighbour.</description>
+      <description>Exchange the focused window with its left neighbor.</description>
     </key>
 
     <key type="as" name="swap-right">
       <default><![CDATA[['<Super><Control>bracketright']]]></default>
       <summary>Swap right</summary>
-      <description>Exchange the focused window with its right neighbour.</description>
+      <description>Exchange the focused window with its right neighbor.</description>
     </key>
 
     <key type="as" name="move-monitor-next">

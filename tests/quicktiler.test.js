@@ -308,7 +308,7 @@ describe('QuickTiler', () => {
             expect(window.get_frame_rect()).toEqual(zone('left-quarter'));
         });
 
-        it('walks the three centre zones in order', () => {
+        it('walks the three center zones in order', () => {
             start();
             const window = focusOne();
 
@@ -504,10 +504,10 @@ describe('QuickTiler', () => {
         });
 
         // Both rects used to be read before _moveResize unmaximized, so the
-        // neighbour received the maximized window's work-area-sized frame
+        // neighbor received the maximized window's work-area-sized frame
         // without the maximized flag: it looked maximized, Mutter's restore no
         // longer applied, and matchZone reported no zone for it.
-        it('does not hand the neighbour a work-area frame when one is maximized', () => {
+        it('does not hand the neighbor a work-area frame when one is maximized', () => {
             start();
             const restore = { x: 100, y: 100, width: 400, height: 300 };
             const [big, small] = world.workspace.add(
@@ -542,7 +542,7 @@ describe('QuickTiler', () => {
             expect(left.get_frame_rect()).toEqual(b);
         });
 
-        it('does nothing when there is no neighbour', () => {
+        it('does nothing when there is no neighbor', () => {
             start();
             const only = world.workspace.add(new FakeWindow())[0];
             world.focus(only);

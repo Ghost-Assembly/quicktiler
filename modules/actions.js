@@ -16,7 +16,7 @@
  * them. Several actions share one operation, differing only in their argument.
  *
  * Written here rather than in modules/quicktiler.js so that the mapping from an
- * action to a behaviour is data this file owns, and so tests/actions.test.js can
+ * action to a behavior is data this file owns, and so tests/actions.test.js can
  * check every action names one of these. That check is the point: the handler
  * table used to be a fourth hand-written copy of the key strings, guarded only
  * by a console.warn at runtime, which is the silent-failure mode this file
@@ -69,7 +69,7 @@ export const ACTIONS = Object.freeze([
     Object.freeze({
         key: 'tile-center',
         group: 'tile',
-        label: 'Tile centre',
+        label: 'Tile center',
         op: 'tile',
         arg: 'center',
     }),

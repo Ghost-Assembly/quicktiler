@@ -57,10 +57,10 @@ export function zoneById(id) {
  * Project a zone onto a monitor work area, in frame coordinates.
  *
  * Gap handling: the work area is inset by a full gap, giving the screen-edge
- * margin, and each internal boundary is split so neighbours are exactly `gap`
+ * margin, and each internal boundary is split so neighbors are exactly `gap`
  * apart. The split is floor/ceil rather than gap/2 so the result stays integral
  * for odd gaps — an odd gap is then asymmetric by one pixel, which is invisible,
- * where fractional pixels would let Mutter round two neighbours into an overlap.
+ * where fractional pixels would let Mutter round two neighbors into an overlap.
  *
  * Boundaries are rounded once per fraction, so two zones that share a fraction
  * resolve to the identical pixel and leave no seam. Rounding each zone's edges
@@ -68,7 +68,7 @@ export function zoneById(id) {
  *
  * @param {object} zone Zone from {@link ZONES}.
  * @param {{x: number, y: number, width: number, height: number}} workArea Monitor work area.
- * @param {number} [gap] Pixels between neighbouring windows and at the screen edge.
+ * @param {number} [gap] Pixels between neighboring windows and at the screen edge.
  * @returns {{x: number, y: number, width: number, height: number}} Frame rectangle.
  */
 export function projectZone(zone, workArea, gap = 0) {

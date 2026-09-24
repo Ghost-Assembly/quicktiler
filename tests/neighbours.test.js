@@ -15,7 +15,7 @@ const RIGHT = 1;
  */
 const at = (seq, x, width = 100) => ({ seq, rect: { x, width } });
 
-const origin = { x: 1000, width: 100 }; // centre 1050
+const origin = { x: 1000, width: 100 }; // center 1050
 
 describe('nearestNeighbour', () => {
     it('returns null when there are no candidates', () => {
@@ -50,16 +50,16 @@ describe('nearestNeighbour', () => {
         expect(nearestNeighbour(origin, [at(1, 2000), at(2, 4000)], LEFT)).toBeNull();
     });
 
-    it('measures from centres, not edges, so a wide window is not always nearest', () => {
-        // Starts closer, but its centre is further away than the narrow one's.
+    it('measures from centers, not edges, so a wide window is not always nearest', () => {
+        // Starts closer, but its center is further away than the narrow one's.
         const wide = at(1, 1150, 2000);
         const narrow = at(2, 1300, 100);
 
         expect(nearestNeighbour(origin, [wide, narrow], RIGHT)).toBe(narrow);
     });
 
-    it('finds a neighbour that overlaps the origin, so untiled windows work', () => {
-        const overlapping = at(1, 1050, 100); // centre 1100, overlaps the origin
+    it('finds a neighbor that overlaps the origin, so untiled windows work', () => {
+        const overlapping = at(1, 1050, 100); // center 1100, overlaps the origin
 
         expect(nearestNeighbour(origin, [overlapping], RIGHT)).toBe(overlapping);
     });
@@ -90,12 +90,12 @@ describe('nearestNeighbour', () => {
         });
     });
 
-    // Current, deliberate behaviour rather than a desirable one. The comparison
-    // is strictly horizontal, so two windows sharing a centre — center-top above
-    // center-bottom, which is the arrangement the centre thirds exist for — are
-    // not neighbours in either direction. Changing this needs a vertical axis,
+    // Current, deliberate behavior rather than a desirable one. The comparison
+    // is strictly horizontal, so two windows sharing a center — center-top above
+    // center-bottom, which is the arrangement the center thirds exist for — are
+    // not neighbors in either direction. Changing this needs a vertical axis,
     // and should update this test consciously rather than by accident.
-    it('cannot reach a candidate whose centre coincides with the origin', () => {
+    it('cannot reach a candidate whose center coincides with the origin', () => {
         const stacked = at(1, 1000, 100);
 
         expect(nearestNeighbour(origin, [stacked], RIGHT)).toBeNull();

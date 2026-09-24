@@ -23,7 +23,7 @@ layout" to switch between. It has one flat list of zones and three cycles:
 | ----------- | --------------------------------------------------------- |
 | Tile left   | left quarter → left half                                  |
 | Tile right  | right quarter → right half                                |
-| Tile centre | centre half → centre top third → centre bottom two thirds |
+| Tile center | center half → center top third → center bottom two thirds |
 
 Which zone a window is in is read back from its own geometry on every keypress.
 Nothing is remembered, so cycling works on windows that some other tool placed,
@@ -35,7 +35,7 @@ and there is no state to go stale.
 | ------------------------ | -------------------------------------------------------------- |
 | Tile left                | <kbd>Super</kbd>+<kbd>Ctrl</kbd>+<kbd>←</kbd>                  |
 | Tile right               | <kbd>Super</kbd>+<kbd>Ctrl</kbd>+<kbd>→</kbd>                  |
-| Tile centre              | <kbd>Super</kbd>+<kbd>Ctrl</kbd>+<kbd>↑</kbd>                  |
+| Tile center              | <kbd>Super</kbd>+<kbd>Ctrl</kbd>+<kbd>↑</kbd>                  |
 | Maximize                 | <kbd>Super</kbd>+<kbd>Ctrl</kbd>+<kbd>↓</kbd>                  |
 | Focus left               | <kbd>Super</kbd>+<kbd>[</kbd>                                  |
 | Focus right              | <kbd>Super</kbd>+<kbd>]</kbd>                                  |
@@ -138,6 +138,6 @@ Set the version in `metadata.json` and `package.json`, commit, then tag and
 push. CI checks the tag against both files before it builds anything. See
 [releasing](https://ghost-assembly.github.io/quicktiler/#releasing).
 
-## Licence
+## License
 
 GPL-3.0-or-later.

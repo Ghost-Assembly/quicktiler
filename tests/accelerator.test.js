@@ -46,7 +46,7 @@ describe('acceleratorLabel', () => {
         ['<Mod4>x', 'Super+X'],
         ['<Mod1>x', 'Alt+X'],
         ['<Control>x', 'Ctrl+X'],
-    ])('canonicalises %s to %s', (accelerator, expected) => {
+    ])('canonicalizes %s to %s', (accelerator, expected) => {
         expect(acceleratorLabel(accelerator)).toBe(expected);
     });
 
@@ -71,7 +71,7 @@ describe('acceleratorLabel', () => {
         expect(acceleratorLabel('<Control><Primary>x')).toBe('Ctrl+X');
     });
 
-    it('keeps a modifier it does not recognise', () => {
+    it('keeps a modifier it does not recognize', () => {
         // Rendering it as "Super+X" would claim a shortcut that does not fire.
         expect(acceleratorLabel('<Super><Level3>x')).toContain('Level3');
     });

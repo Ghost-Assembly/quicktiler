@@ -330,7 +330,7 @@ describe('Panel', () => {
             expect(acceleratorOn(rowFor('tile-right'))).toBe(before);
         });
 
-        // Rebuilding would destroy a row a click could still be travelling
+        // Rebuilding would destroy a row a click could still be traveling
         // through. Retexting one label cannot.
         it('destroys no rows', () => {
             start();
@@ -403,7 +403,7 @@ describe('Panel', () => {
         // The tile holds a strong reference to whatever it last saw focused.
         // Closing that window does not always move focus on -- close the last
         // window on a workspace and nothing takes it -- so without the
-        // 'unmanaged' watch the MetaWindow could not be finalised.
+        // 'unmanaged' watch the MetaWindow could not be finalized.
         it('is forgotten when that window closes', () => {
             start();
             const window = world.workspace.add(new FakeWindow())[0];

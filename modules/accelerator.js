@@ -60,12 +60,12 @@ const MODIFIER_ALIASES = new Map([
  * modifier and an unknown key name are the same problem, so they are spelled
  * the same way.
  *
- * @param {string} word Token to capitalise.
+ * @param {string} word Token to capitalize.
  * @returns {string} The token, first character upper-cased.
  */
 const capitalise = word => word.charAt(0).toUpperCase() + word.slice(1);
 
-// Gdk key names whose display text is not simply the name capitalised. The
+// Gdk key names whose display text is not simply the name capitalized. The
 // arrows are the ones that matter: "Super+Ctrl+Left" beside a table that says
 // "Super+Ctrl+←" reads as two different shortcuts.
 const KEY_LABELS = new Map([
@@ -97,7 +97,7 @@ const KEY_LABELS = new Map([
  * Split a GSettings accelerator into its modifiers and its key.
  *
  * `<Release>` is dropped: it says when the binding fires, not what is pressed.
- * A modifier that is not recognised is kept rather than discarded — a shortcut
+ * A modifier that is not recognized is kept rather than discarded — a shortcut
  * rendered with a modifier missing claims something false about which keys to
  * press, which is worse than one rendered oddly.
  *
@@ -114,7 +114,7 @@ export function parseAccelerator(accelerator) {
         .map(token => MODIFIER_ALIASES.get(token) ?? token);
 
     // A Set because '<Control><Primary>x' names the same modifier twice, and
-    // "Ctrl+Ctrl+X" is not a shortcut anyone would recognise.
+    // "Ctrl+Ctrl+X" is not a shortcut anyone would recognize.
     const seen = new Set(tokens);
     const known = MODIFIER_ORDER.filter(modifier => seen.has(modifier));
     const unknown = [...seen].filter(token => !MODIFIER_LABELS.has(token));
@@ -123,7 +123,7 @@ export function parseAccelerator(accelerator) {
     // with every <...> removed. It says what an accelerator actually is —
     // modifiers, then one key — and it is exact: a key name never contains
     // '>', because Gdk calls that one 'greater'. Stripping angle brackets
-    // instead reads as an attempt to sanitise markup, which is also how CodeQL
+    // instead reads as an attempt to sanitize markup, which is also how CodeQL
     // reads it.
     const lastModifier = accelerator.lastIndexOf('>');
 

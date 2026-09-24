@@ -22,7 +22,7 @@ class PopupBaseMenuItem extends FakeActor {
      * Wire up the St.Label the real classes expose as `this.label`.
      *
      * Shared rather than repeated per subclass: the real popupMenu.js gives
-     * every labelled item the same handle, and a stub that built one of them
+     * every labeled item the same handle, and a stub that built one of them
      * differently — as this one did, with a submenu label that had no
      * clutter_text — is a difference between rows that exists only in the test
      * suite.
@@ -57,7 +57,7 @@ class PopupMenuItem extends PopupBaseMenuItem {
 
 class PopupSeparatorMenuItem extends PopupBaseMenuItem {}
 
-/** The shared behaviour of anything that holds menu items. */
+/** The shared behavior of anything that holds menu items. */
 class MenuBase extends FakeActor {
     _init(props = {}) {
         super._init(props);
@@ -74,7 +74,7 @@ class MenuBase extends FakeActor {
         // The real PopupMenuBase connects to 'activate' with
         // ConnectFlags.AFTER and calls itemActivated(), which closes the top
         // menu. Every activation closes the whole menu unless the item
-        // overrides activate() and declines to chain up. Modelling it here is
+        // overrides activate() and declines to chain up. Modeling it here is
         // what lets a test notice a row that should have stayed open.
         item.connect('activate', () => this._getTopMenu().close());
     }
