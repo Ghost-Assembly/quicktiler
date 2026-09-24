@@ -37,7 +37,7 @@ const TITLE = 'QuickTiler';
 /**
  * The tile: a switch that pauses the keybindings, over a menu of the actions.
  *
- * No class fields anywhere in this file. A field initialises after super()
+ * No class fields anywhere in this file. A field initializes after super()
  * returns, which is after _init has already run, so a field would silently
  * overwrite whatever _init set — in real GJS and in tests/support/actors.js
  * alike.
@@ -119,7 +119,7 @@ const QuickTilerToggle = GObject.registerClass(
         }
 
         /**
-         * One action, labelled with the shortcut it currently holds.
+         * One action, labeled with the shortcut it currently holds.
          *
          * The row chains up to the default activate, so clicking it closes the
          * whole panel. That is right here and is the opposite of what a row
@@ -156,7 +156,7 @@ const QuickTilerToggle = GObject.registerClass(
          * Deliberately not a rebuild. Nothing about a row's shape depends on
          * the accelerator — only one label's text does — so the rows are built
          * once and never replaced. That removes by construction the whole class
-         * of bug where a row is destroyed while a click is still travelling
+         * of bug where a row is destroyed while a click is still traveling
          * through it.
          *
          * @param {string} key Schema key whose accelerator changed.
@@ -305,7 +305,7 @@ export class Panel {
         // Mutter unmanages a window when it closes, and focus does not always
         // move on afterwards — close the last window on a workspace and nothing
         // takes it. Without this the tile would hold that MetaWindow, keeping
-        // it from being finalised, until something else was focused.
+        // it from being finalized, until something else was focused.
         this._lastFocusedUnmanagedId = window.connect('unmanaged', () =>
             this._forgetFocus(),
         );

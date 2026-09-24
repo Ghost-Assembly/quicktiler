@@ -49,7 +49,7 @@ describe('ACTIONS', () => {
 
 describe('OPERATIONS', () => {
     // The check that replaces a console.warn. modules/quicktiler.js maps an
-    // action to a behaviour through `op`; when that mapping was ten hand-written
+    // action to a behavior through `op`; when that mapping was ten hand-written
     // key strings, an action added to this list and the gschema but not to the
     // handler table was configurable, bindable and inert, and said so only in
     // the journal. Here it fails the build.

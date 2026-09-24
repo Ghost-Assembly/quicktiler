@@ -12,8 +12,8 @@
         scripts/icon-check.js exists because that happened.
 
         fill="#222222" on a group is Adwaita's own convention; gnome-shell
-        recolours a *-symbolic.svg from the theme, so nothing here may depend
-        on the colour actually being this one.
+        recolors a *-symbolic.svg from the theme, so nothing here may depend
+        on the color actually being this one.
     -->
     <g fill="#222222">
         <rect x="1" y="2" width="6.2" height="12" rx="0.8"/>

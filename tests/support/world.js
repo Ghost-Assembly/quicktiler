@@ -1,7 +1,7 @@
 // A fake Mutter world: windows, a workspace and monitors, behaving closely
 // enough for modules/quicktiler.js to be driven end to end.
 //
-// The fakes model the two Mutter behaviours the extension actually depends on
+// The fakes model the two Mutter behaviors the extension actually depends on
 // and that its bugs came from: a maximized window reports the whole work area
 // as its frame rect, and allows_resize() is false while a window is maximized.
 

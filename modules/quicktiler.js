@@ -3,8 +3,8 @@
 // Everything here needs a live gnome-shell, so none of it is unit-testable off
 // the Shell. That is why it is kept thin and free of branching logic: geometry
 // and cycling live in modules/zones.js, the rules about which windows may be
-// touched live in modules/windows.js, choosing a neighbour lives in
-// modules/neighbours.js, and the action list lives in modules/actions.js. All
+// touched live in modules/windows.js, choosing a neighbor lives in
+// modules/neighbors.js, and the action list lives in modules/actions.js. All
 // four import nothing and are covered by Vitest.
 //
 // scripts/headless-check.sh checks that what is left enables, disables and
@@ -17,7 +17,7 @@ import Shell from 'gi://Shell';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import { ACTIONS, ACTIONS_BY_KEY } from './actions.js';
-import { nearestNeighbour } from './neighbours.js';
+import { nearestNeighbor } from './neighbors.js';
 import { KEYS, SettingsWatcher } from './settings.js';
 import { isFocusable, isPlaceable } from './windows.js';
 import { matchZone, nextZone, projectZone, zoneById } from './zones.js';
@@ -25,7 +25,7 @@ import { matchZone, nextZone, projectZone, zoneById } from './zones.js';
 /**
  * The facts isFocusable needs, and nothing more.
  *
- * Split out from {@link describe} because _neighbour calls this for every
+ * Split out from {@link describe} because _neighbor calls this for every
  * window on the workspace: on the focus path the four placement facts below are
  * read and thrown away, and allows_resize() in particular is not a plain getter
  * in Mutter.
@@ -93,7 +93,7 @@ export class QuickTiler {
         this._bound = false;
 
         // One entry per operation in modules/actions.js's OPERATIONS, not one
-        // per action: the ten actions are five behaviours and an argument, and
+        // per action: the ten actions are five behaviors and an argument, and
         // which action carries which argument is that file's business, not
         // this one's. What is left here is the part that needs a live Shell.
         //
@@ -117,14 +117,14 @@ export class QuickTiler {
                 'focus',
                 {
                     policy: FOCUS,
-                    run: (window, direction) => this._focusNeighbour(window, direction),
+                    run: (window, direction) => this._focusNeighbor(window, direction),
                 },
             ],
             [
                 'swap',
                 {
                     policy: PLACE,
-                    run: (window, direction) => this._swapNeighbour(window, direction),
+                    run: (window, direction) => this._swapNeighbor(window, direction),
                 },
             ],
             [
@@ -198,7 +198,7 @@ export class QuickTiler {
         // and that is not a preference. With show-quick-settings off there is
         // no panel at all, and the preferences window's shortcuts switch would
         // then be configurable and completely inert — the silent failure this
-        // extension is organised around not having. The panel only ever writes
+        // extension is organized around not having. The panel only ever writes
         // the key; this reacts to it.
         //
         // Connected before the first read, so a change racing the connect
@@ -419,22 +419,22 @@ export class QuickTiler {
     /**
      * The nearest window to one side of the focused window.
      *
-     * Gathers eligible windows and hands the choice to modules/neighbours.js,
+     * Gathers eligible windows and hands the choice to modules/neighbors.js,
      * which is unit-tested. Nothing is decided here.
      *
      * Candidates are not restricted to the current monitor. Frame rects are in
      * absolute coordinates, so a monitor to the right simply contains windows
      * further right, and both focus and swap fall out of that: a swapped window
-     * takes the neighbour's rect, which lies on the neighbour's monitor, and
+     * takes the neighbor's rect, which lies on the neighbor's monitor, and
      * Mutter reassigns the monitor from the new geometry.
      *
      * @param {Meta.Window} window Window to search from.
      * @param {number} direction -1 for left, 1 for right.
      * @param {{accepts: Function, read: Function}} policy Policy a candidate
      *   must satisfy; its reader is what each candidate is described with.
-     * @returns {Meta.Window|null} The neighbour, if there is one.
+     * @returns {Meta.Window|null} The neighbor, if there is one.
      */
-    _neighbour(window, direction, policy) {
+    _neighbor(window, direction, policy) {
         const workspace = window.get_workspace();
         if (!workspace) return null;
 
@@ -454,46 +454,46 @@ export class QuickTiler {
         }
 
         return (
-            nearestNeighbour(window.get_frame_rect(), candidates, direction)?.window ??
+            nearestNeighbor(window.get_frame_rect(), candidates, direction)?.window ??
             null
         );
     }
 
     /**
-     * Move focus to the neighbouring window without moving anything.
+     * Move focus to the neighboring window without moving anything.
      *
      * @param {Meta.Window} window Window to search from, already policy-checked.
      * @param {number} direction -1 for left, 1 for right.
      */
-    _focusNeighbour(window, direction) {
-        const neighbour = this._neighbour(window, direction, FOCUS);
-        if (neighbour) Main.activateWindow(neighbour);
+    _focusNeighbor(window, direction) {
+        const neighbor = this._neighbor(window, direction, FOCUS);
+        if (neighbor) Main.activateWindow(neighbor);
     }
 
     /**
-     * Exchange a window's geometry with its neighbour's.
+     * Exchange a window's geometry with its neighbor's.
      *
      * @param {Meta.Window} window Window to swap, already policy-checked.
      * @param {number} direction -1 for left, 1 for right.
      */
-    _swapNeighbour(window, direction) {
-        const neighbour = this._neighbour(window, direction, PLACE);
-        if (!neighbour) return;
+    _swapNeighbor(window, direction) {
+        const neighbor = this._neighbor(window, direction, PLACE);
+        if (!neighbor) return;
 
         // Unmaximize both before reading their geometry. A maximized window's
         // frame rect is the entire work area, so capturing it first would hand
-        // the neighbour a work-area-sized frame with no maximized flag: it looks
+        // the neighbor a work-area-sized frame with no maximized flag: it looks
         // maximized, Mutter's own restore no longer applies to it, and matchZone
         // reports no zone for it at all. isPlaceable admits maximized windows by
         // design, so this path is reachable.
         this._unmaximize(window);
-        this._unmaximize(neighbour);
+        this._unmaximize(neighbor);
 
         const from = window.get_frame_rect();
-        const to = neighbour.get_frame_rect();
+        const to = neighbor.get_frame_rect();
 
         this._moveResize(window, to);
-        this._moveResize(neighbour, from);
+        this._moveResize(neighbor, from);
     }
 
     /**

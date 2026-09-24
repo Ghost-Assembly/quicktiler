@@ -1,7 +1,7 @@
 {
     "uuid": "quicktiler@napalm255.github.io",
     "name": "QuickTiler",
-    "description": "Keyboard-driven zone tiling. Cycle windows through quarter, half and centre zones with no overlay, no timers and no background work.",
+    "description": "Keyboard-driven zone tiling. Cycle windows through quarter, half and center zones with no overlay, no timers and no background work.",
     "shell-version": ["49", "50"],
     "url": "https://github.com/Ghost-Assembly/quicktiler",
     "settings-schema": "org.gnome.shell.extensions.quicktiler",

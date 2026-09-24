@@ -52,7 +52,7 @@ describe('projectZone', () => {
 });
 
 describe('zone tiling', () => {
-    it('covers the work area exactly with quarter + centre + quarter', () => {
+    it('covers the work area exactly with quarter + center + quarter', () => {
         const l = project('left-quarter', WA, 0);
         const c = project('center-half', WA, 0);
         const r = project('right-quarter', WA, 0);
@@ -72,7 +72,7 @@ describe('zone tiling', () => {
         expect(r.x + r.width).toBe(WA.x + WA.width);
     });
 
-    it('splits the centre into thirds with no seam and no lost pixel', () => {
+    it('splits the center into thirds with no seam and no lost pixel', () => {
         const top = project('center-top', WA, 0);
         const bottom = project('center-bottom', WA, 0);
 
@@ -80,7 +80,7 @@ describe('zone tiling', () => {
         expect(top.height + bottom.height).toBe(WA.height);
     });
 
-    it('leaves exactly one gap between neighbours and at the screen edge', () => {
+    it('leaves exactly one gap between neighbors and at the screen edge', () => {
         const gap = 8;
         const l = project('left-quarter', WA, gap);
         const c = project('center-half', WA, gap);
@@ -92,7 +92,7 @@ describe('zone tiling', () => {
         expect(WA.x + WA.width - (r.x + r.width)).toBe(gap);
     });
 
-    it('leaves exactly one gap between the centre thirds', () => {
+    it('leaves exactly one gap between the center thirds', () => {
         const gap = 8;
         const top = project('center-top', WA, gap);
         const bottom = project('center-bottom', WA, gap);
