@@ -17,7 +17,7 @@ import Shell from 'gi://Shell';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import { ACTIONS, ACTIONS_BY_KEY } from './actions.js';
-import { nearestNeighbour } from './neighbours.js';
+import { nearestNeighbor } from './neighbours.js';
 import { KEYS, SettingsWatcher } from './settings.js';
 import { isFocusable, isPlaceable } from './windows.js';
 import { matchZone, nextZone, projectZone, zoneById } from './zones.js';
@@ -25,7 +25,7 @@ import { matchZone, nextZone, projectZone, zoneById } from './zones.js';
 /**
  * The facts isFocusable needs, and nothing more.
  *
- * Split out from {@link describe} because _neighbour calls this for every
+ * Split out from {@link describe} because _neighbor calls this for every
  * window on the workspace: on the focus path the four placement facts below are
  * read and thrown away, and allows_resize() in particular is not a plain getter
  * in Mutter.
@@ -117,14 +117,14 @@ export class QuickTiler {
                 'focus',
                 {
                     policy: FOCUS,
-                    run: (window, direction) => this._focusNeighbour(window, direction),
+                    run: (window, direction) => this._focusNeighbor(window, direction),
                 },
             ],
             [
                 'swap',
                 {
                     policy: PLACE,
-                    run: (window, direction) => this._swapNeighbour(window, direction),
+                    run: (window, direction) => this._swapNeighbor(window, direction),
                 },
             ],
             [
@@ -434,7 +434,7 @@ export class QuickTiler {
      *   must satisfy; its reader is what each candidate is described with.
      * @returns {Meta.Window|null} The neighbor, if there is one.
      */
-    _neighbour(window, direction, policy) {
+    _neighbor(window, direction, policy) {
         const workspace = window.get_workspace();
         if (!workspace) return null;
 
@@ -454,7 +454,7 @@ export class QuickTiler {
         }
 
         return (
-            nearestNeighbour(window.get_frame_rect(), candidates, direction)?.window ??
+            nearestNeighbor(window.get_frame_rect(), candidates, direction)?.window ??
             null
         );
     }
@@ -465,9 +465,9 @@ export class QuickTiler {
      * @param {Meta.Window} window Window to search from, already policy-checked.
      * @param {number} direction -1 for left, 1 for right.
      */
-    _focusNeighbour(window, direction) {
-        const neighbour = this._neighbour(window, direction, FOCUS);
-        if (neighbour) Main.activateWindow(neighbour);
+    _focusNeighbor(window, direction) {
+        const neighbor = this._neighbor(window, direction, FOCUS);
+        if (neighbor) Main.activateWindow(neighbor);
     }
 
     /**
@@ -476,9 +476,9 @@ export class QuickTiler {
      * @param {Meta.Window} window Window to swap, already policy-checked.
      * @param {number} direction -1 for left, 1 for right.
      */
-    _swapNeighbour(window, direction) {
-        const neighbour = this._neighbour(window, direction, PLACE);
-        if (!neighbour) return;
+    _swapNeighbor(window, direction) {
+        const neighbor = this._neighbor(window, direction, PLACE);
+        if (!neighbor) return;
 
         // Unmaximize both before reading their geometry. A maximized window's
         // frame rect is the entire work area, so capturing it first would hand
@@ -487,13 +487,13 @@ export class QuickTiler {
         // reports no zone for it at all. isPlaceable admits maximized windows by
         // design, so this path is reachable.
         this._unmaximize(window);
-        this._unmaximize(neighbour);
+        this._unmaximize(neighbor);
 
         const from = window.get_frame_rect();
-        const to = neighbour.get_frame_rect();
+        const to = neighbor.get_frame_rect();
 
         this._moveResize(window, to);
-        this._moveResize(neighbour, from);
+        this._moveResize(neighbor, from);
     }
 
     /**

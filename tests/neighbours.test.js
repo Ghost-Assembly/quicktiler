@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { nearestNeighbour } from '../modules/neighbours.js';
+import { nearestNeighbor } from '../modules/neighbours.js';
 
 const LEFT = -1;
 const RIGHT = 1;
@@ -17,16 +17,16 @@ const at = (seq, x, width = 100) => ({ seq, rect: { x, width } });
 
 const origin = { x: 1000, width: 100 }; // center 1050
 
-describe('nearestNeighbour', () => {
+describe('nearestNeighbor', () => {
     it('returns null when there are no candidates', () => {
-        expect(nearestNeighbour(origin, [], RIGHT)).toBeNull();
+        expect(nearestNeighbor(origin, [], RIGHT)).toBeNull();
     });
 
     it('picks the closest candidate to the right', () => {
         const near = at(1, 1200);
         const far = at(2, 3000);
 
-        expect(nearestNeighbour(origin, [far, near], RIGHT)).toBe(near);
+        expect(nearestNeighbor(origin, [far, near], RIGHT)).toBe(near);
     });
 
     it('keeps the closest when a farther candidate arrives after it', () => {
@@ -35,19 +35,19 @@ describe('nearestNeighbour', () => {
         const near = at(1, 1200);
         const far = at(2, 3000);
 
-        expect(nearestNeighbour(origin, [near, far], RIGHT)).toBe(near);
+        expect(nearestNeighbor(origin, [near, far], RIGHT)).toBe(near);
     });
 
     it('picks the closest candidate to the left', () => {
         const near = at(1, 800);
         const far = at(2, 100);
 
-        expect(nearestNeighbour(origin, [far, near], LEFT)).toBe(near);
+        expect(nearestNeighbor(origin, [far, near], LEFT)).toBe(near);
     });
 
     it('ignores candidates on the wrong side', () => {
-        expect(nearestNeighbour(origin, [at(1, 200), at(2, 400)], RIGHT)).toBeNull();
-        expect(nearestNeighbour(origin, [at(1, 2000), at(2, 4000)], LEFT)).toBeNull();
+        expect(nearestNeighbor(origin, [at(1, 200), at(2, 400)], RIGHT)).toBeNull();
+        expect(nearestNeighbor(origin, [at(1, 2000), at(2, 4000)], LEFT)).toBeNull();
     });
 
     it('measures from centers, not edges, so a wide window is not always nearest', () => {
@@ -55,13 +55,13 @@ describe('nearestNeighbour', () => {
         const wide = at(1, 1150, 2000);
         const narrow = at(2, 1300, 100);
 
-        expect(nearestNeighbour(origin, [wide, narrow], RIGHT)).toBe(narrow);
+        expect(nearestNeighbor(origin, [wide, narrow], RIGHT)).toBe(narrow);
     });
 
     it('finds a neighbor that overlaps the origin, so untiled windows work', () => {
         const overlapping = at(1, 1050, 100); // center 1100, overlaps the origin
 
-        expect(nearestNeighbour(origin, [overlapping], RIGHT)).toBe(overlapping);
+        expect(nearestNeighbor(origin, [overlapping], RIGHT)).toBe(overlapping);
     });
 
     describe('ties', () => {
@@ -72,18 +72,18 @@ describe('nearestNeighbour', () => {
             const first = at(7, 1500);
             const second = at(3, 1500);
 
-            expect(nearestNeighbour(origin, [first, second], RIGHT)).toBe(second);
-            expect(nearestNeighbour(origin, [second, first], RIGHT)).toBe(second);
+            expect(nearestNeighbor(origin, [first, second], RIGHT)).toBe(second);
+            expect(nearestNeighbor(origin, [second, first], RIGHT)).toBe(second);
         });
 
         it('is stable across a shuffled candidate list', () => {
             const candidates = [at(9, 1500), at(2, 1500), at(5, 1500), at(4, 1500)];
-            const expected = nearestNeighbour(origin, candidates, RIGHT);
+            const expected = nearestNeighbor(origin, candidates, RIGHT);
 
             for (let i = 0; i < candidates.length; i++) {
                 const rotated = [...candidates.slice(i), ...candidates.slice(0, i)];
 
-                expect(nearestNeighbour(origin, rotated, RIGHT)).toBe(expected);
+                expect(nearestNeighbor(origin, rotated, RIGHT)).toBe(expected);
             }
 
             expect(expected.seq).toBe(2);
@@ -98,15 +98,15 @@ describe('nearestNeighbour', () => {
     it('cannot reach a candidate whose center coincides with the origin', () => {
         const stacked = at(1, 1000, 100);
 
-        expect(nearestNeighbour(origin, [stacked], RIGHT)).toBeNull();
-        expect(nearestNeighbour(origin, [stacked], LEFT)).toBeNull();
+        expect(nearestNeighbor(origin, [stacked], RIGHT)).toBeNull();
+        expect(nearestNeighbor(origin, [stacked], LEFT)).toBeNull();
     });
 
     it('does not mutate the candidate list it is given', () => {
         const candidates = [at(2, 1500), at(1, 1200)];
         const snapshot = JSON.parse(JSON.stringify(candidates));
 
-        nearestNeighbour(origin, candidates, RIGHT);
+        nearestNeighbor(origin, candidates, RIGHT);
 
         expect(candidates).toEqual(snapshot);
     });

@@ -14,7 +14,7 @@
  * @param {{x: number, width: number}} rect Rectangle.
  * @returns {number} Center on the x axis.
  */
-function centreX(rect) {
+function centerX(rect) {
     return rect.x + rect.width / 2;
 }
 
@@ -42,14 +42,14 @@ function centreX(rect) {
  * @param {number} direction -1 for left, 1 for right.
  * @returns {object|null} The winning candidate, or null if there is none.
  */
-export function nearestNeighbour(origin, candidates, direction) {
-    const from = centreX(origin);
+export function nearestNeighbor(origin, candidates, direction) {
+    const from = centerX(origin);
 
     let best = null;
     let bestDistance = Infinity;
 
     for (const candidate of candidates) {
-        const distance = (centreX(candidate.rect) - from) * direction;
+        const distance = (centerX(candidate.rect) - from) * direction;
 
         // Strictly positive: a candidate level with the origin is not to either
         // side of it, and one behind is in the wrong direction entirely.

@@ -63,7 +63,7 @@ const MODIFIER_ALIASES = new Map([
  * @param {string} word Token to capitalize.
  * @returns {string} The token, first character upper-cased.
  */
-const capitalise = word => word.charAt(0).toUpperCase() + word.slice(1);
+const capitalize = word => word.charAt(0).toUpperCase() + word.slice(1);
 
 // Gdk key names whose display text is not simply the name capitalized. The
 // arrows are the ones that matter: "Super+Ctrl+Left" beside a table that says
@@ -152,7 +152,7 @@ function keyLabel(key) {
     if ([...key].length === 1) return key.toUpperCase();
     if (/^0x[0-9a-f]+$/.test(key)) return key;
 
-    return capitalise(key.replaceAll('_', ' '));
+    return capitalize(key.replaceAll('_', ' '));
 }
 
 /**
@@ -173,7 +173,7 @@ export function acceleratorLabel(accelerator) {
     if (!label) return '';
 
     const parts = modifiers.map(
-        modifier => MODIFIER_LABELS.get(modifier) ?? capitalise(modifier),
+        modifier => MODIFIER_LABELS.get(modifier) ?? capitalize(modifier),
     );
 
     return [...parts, label].join('+');
