@@ -8,7 +8,7 @@ so it is only ever supported on the Shell versions named in `metadata.json`.
 ## Reporting a vulnerability
 
 Report privately through GitHub's
-[security advisory form](https://github.com/napalm255/quicktiler/security/advisories/new)
+[security advisory form](https://github.com/Ghost-Assembly/quicktiler/security/advisories/new)
 rather than opening a public issue.
 
 Please include the Shell version, the extension version from `metadata.json`,

@@ -10,7 +10,7 @@ There is a quick settings tile, listing every action with the shortcut it
 currently holds — so the panel teaches the keyboard rather than replacing it.
 Turn it off and the extension holds no actors at all.
 
-**[Documentation →](https://napalm255.github.io/quicktiler/)** — zones, architecture,
+**[Documentation →](https://ghost-assembly.github.io/quicktiler/)** — zones, architecture,
 testing, packaging and releasing.
 
 ## Zones
@@ -73,7 +73,7 @@ Needs GNOME 49 or newer. From the latest release, with no clone and no
 toolchain — `gnome-extensions` ships with GNOME Shell itself:
 
 ```
-curl -LO 'https://github.com/napalm255/quicktiler/releases/latest/download/quicktiler@napalm255.github.io.shell-extension.zip'
+curl -LO 'https://github.com/Ghost-Assembly/quicktiler/releases/latest/download/quicktiler@napalm255.github.io.shell-extension.zip'
 gnome-extensions install --force 'quicktiler@napalm255.github.io.shell-extension.zip'
 ```
 
@@ -128,15 +128,15 @@ Vitest runs them on plain Node. `modules/quicktiler.js` is the only file that
 touches Meta or Shell, and `modules/panel.js` the only one that touches St,
 Clutter, PopupMenu or QuickSettings; both are unit-tested through stubs aliased
 in `vitest.config.js`. The
-[architecture](https://napalm255.github.io/quicktiler/#architecture) and
-[testing](https://napalm255.github.io/quicktiler/#testing) sections of the
+[architecture](https://ghost-assembly.github.io/quicktiler/#architecture) and
+[testing](https://ghost-assembly.github.io/quicktiler/#testing) sections of the
 documentation go into why.
 
 ## Releasing
 
 Set the version in `metadata.json` and `package.json`, commit, then tag and
 push. CI checks the tag against both files before it builds anything. See
-[releasing](https://napalm255.github.io/quicktiler/#releasing).
+[releasing](https://ghost-assembly.github.io/quicktiler/#releasing).
 
 ## Licence
 
