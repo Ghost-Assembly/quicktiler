@@ -122,7 +122,7 @@ just test-live  # headless Shell smoke test, then the packer check
 just docs       # serve the documentation site locally
 ```
 
-`modules/zones.js`, `windows.js`, `neighbours.js`, `actions.js`,
+`modules/zones.js`, `windows.js`, `neighbors.js`, `actions.js`,
 `shortcuts.js`, `accelerator.js` and `settings.js` import nothing at all, so
 Vitest runs them on plain Node. `modules/quicktiler.js` is the only file that
 touches Meta or Shell, and `modules/panel.js` the only one that touches St,

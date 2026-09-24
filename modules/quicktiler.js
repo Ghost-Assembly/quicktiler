@@ -4,7 +4,7 @@
 // the Shell. That is why it is kept thin and free of branching logic: geometry
 // and cycling live in modules/zones.js, the rules about which windows may be
 // touched live in modules/windows.js, choosing a neighbor lives in
-// modules/neighbours.js, and the action list lives in modules/actions.js. All
+// modules/neighbors.js, and the action list lives in modules/actions.js. All
 // four import nothing and are covered by Vitest.
 //
 // scripts/headless-check.sh checks that what is left enables, disables and
@@ -17,7 +17,7 @@ import Shell from 'gi://Shell';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import { ACTIONS, ACTIONS_BY_KEY } from './actions.js';
-import { nearestNeighbor } from './neighbours.js';
+import { nearestNeighbor } from './neighbors.js';
 import { KEYS, SettingsWatcher } from './settings.js';
 import { isFocusable, isPlaceable } from './windows.js';
 import { matchZone, nextZone, projectZone, zoneById } from './zones.js';
@@ -419,7 +419,7 @@ export class QuickTiler {
     /**
      * The nearest window to one side of the focused window.
      *
-     * Gathers eligible windows and hands the choice to modules/neighbours.js,
+     * Gathers eligible windows and hands the choice to modules/neighbors.js,
      * which is unit-tested. Nothing is decided here.
      *
      * Candidates are not restricted to the current monitor. Frame rects are in

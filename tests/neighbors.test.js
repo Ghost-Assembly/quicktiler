@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { nearestNeighbor } from '../modules/neighbours.js';
+import { nearestNeighbor } from '../modules/neighbors.js';
 
 const LEFT = -1;
 const RIGHT = 1;
