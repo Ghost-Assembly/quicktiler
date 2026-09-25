@@ -488,6 +488,26 @@ describe('Panel', () => {
             expect(indicator._wasDestroyed).toBe(true);
         });
 
+        // The Shell parents the toggle's menu into the quick settings overlay
+        // and never destroys it, so the extension must, or every lock leaks one.
+        it('destroys the tile menu the Shell leaves behind', () => {
+            start();
+            const tileMenu = toggle().menu;
+
+            panel.disable();
+
+            expect(tileMenu._wasDestroyed).toBe(true);
+        });
+
+        it('destroys the tile menu when the tile is switched off', () => {
+            start();
+            const tileMenu = toggle().menu;
+
+            settings.emitChange(KEYS.SHOW_QUICK_SETTINGS, false);
+
+            expect(tileMenu._wasDestroyed).toBe(true);
+        });
+
         it('survives enable, disable and enable again', () => {
             start();
             panel.disable();

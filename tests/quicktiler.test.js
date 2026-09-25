@@ -563,7 +563,7 @@ describe('QuickTiler', () => {
             expect(window.moves).toHaveLength(0);
         });
 
-        it('moves to the next monitor and wraps back round', () => {
+        it('moves to the next monitor and wraps back around', () => {
             start([WIDE, SECOND]);
             const window = world.workspace.add(new FakeWindow())[0];
             world.focus(window);

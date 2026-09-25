@@ -22,6 +22,13 @@ class QuickMenuToggle extends FakeActor {
         super._init(props);
         this.menu = new QuickToggleMenu();
         this.checked = Boolean(props.checked);
+        // Deliberately NOT destroyed with the toggle, and not a child of it.
+        // The real QuickSettingsItem never destroys its menu — Shell 50.3's
+        // quickSettings.js has no destroy call at all, and
+        // QuickSettingsMenu._completeAddItem parents the menu's actor into its
+        // own overlay — so an extension that does not destroy it leaks one
+        // menu, its rows, its focus group and its sessionMode handler per
+        // disable.
     }
 
     /** Fire the toggle as a click would, flipping it first. */
