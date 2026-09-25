@@ -32,7 +32,7 @@ export default defineConfig({
     },
 
     // gnome-shell resolves these at runtime; Node cannot. Pointing them at
-    // stubs is what makes the Shell layer — and the five bugs fixed in it —
+    // stubs is what makes the Shell layer — and the bugs fixed in it —
     // reachable from Vitest at all. The stubs live in tests/, so they are never
     // shipped and never counted as covered code.
     //

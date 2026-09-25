@@ -87,7 +87,8 @@ export class QuickTiler {
      */
     constructor(settings) {
         this._settings = settings;
-        this._gap = settings.get_int(KEYS.GAP);
+        // Read in enable(), which always runs before anything uses it.
+        this._gap = 0;
         this._watches = new SettingsWatcher(settings);
         this._bindings = [];
         this._bound = false;
