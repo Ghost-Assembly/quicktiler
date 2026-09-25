@@ -197,7 +197,9 @@ export function canonicalAccelerator(accelerator) {
     const { modifiers, key } = parseAccelerator(accelerator);
     if (!key) return '';
 
-    return [...[...modifiers].sort(), key].join('+');
+    // A fixed locale, so the canonical form is the same on every machine.
+    const ordered = [...modifiers].sort((a, b) => a.localeCompare(b, 'en'));
+    return [...ordered, key].join('+');
 }
 
 /**
