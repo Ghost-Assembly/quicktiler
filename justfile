@@ -1,7 +1,11 @@
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
-# Derived, so metadata.json is the only place the uuid is written down.
-uuid := shell("jq -r .uuid metadata.json")
+# Derived, so metadata.json is the only place the uuid is written down. Read
+# with just's own functions rather than jq: every variable is evaluated before
+# any recipe runs, so a jq here would stop `just setup` from ever getting as far
+# as saying that jq is missing. The scripts still need jq, and setup checks it.
+_uuid := replace_regex(read("metadata.json"), '(?s)^.*?"uuid"\s*:\s*"([^"]+)".*$', '$1')
+uuid := if _uuid =~ '^[A-Za-z0-9._@-]+$' { _uuid } else { error("no uuid in metadata.json") }
 install_dir := env_var('HOME') / ".local/share/gnome-shell/extensions" / uuid
 src := "metadata.json extension.js prefs.js modules schemas icons"
 
@@ -13,10 +17,14 @@ default:
 setup:
     mise install
     npm ci
-    @for tool in gjs glib-compile-schemas gnome-shell; do \
+    @for pair in gjs:gjs glib-compile-schemas:glib2 gnome-shell:gnome-shell \
+        gnome-extensions:gnome-shell rsync:rsync zip:zip unzip:unzip jq:jq; do \
+        tool="${pair%%:*}"; package="${pair#*:}"; \
         command -v "$tool" >/dev/null \
-            || { echo "missing $tool — dnf install gjs glib2-devel gnome-shell"; exit 1; }; \
+            || { echo "missing $tool — dnf install $package"; exit 1; }; \
     done
+    @test -x /usr/libexec/mutter-devkit \
+        || echo "optional: just run needs mutter-devkit — dnf install mutter-devkit"
     @echo "ready"
 
 # Format code in place
@@ -39,9 +47,10 @@ test *args:
 coverage:
     npx vitest run --coverage
 
-# Both need a real Shell, so neither runs in CI.
+# Both need a real Shell, so neither runs in CI. Builds first, so pack-check
+# never compares a stale zip.
 # Smoke-test in a headless gnome-shell and check the bundle layout
-test-live:
+test-live: build
     ./scripts/headless-check.sh
     ./scripts/pack-check.sh
 
@@ -70,9 +79,11 @@ build:
     zip -qr {{ uuid }}.shell-extension.zip {{ src }} -x 'schemas/gschemas.compiled'
     @echo "built {{ uuid }}.shell-extension.zip"
 
-# Run a nested gnome-shell to try the extension by hand
+# GNOME 49 and later have no nested mode: --devkit opens the Shell in a
+# window through mutter-devkit (dnf install mutter-devkit).
+# Run a gnome-shell in a window to try the extension by hand
 run:
-    dbus-run-session -- gnome-shell --wayland
+    dbus-run-session -- gnome-shell --devkit --wayland
 
 # Copy the extension into the user extensions directory
 install:
