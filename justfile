@@ -17,6 +17,7 @@ default:
 setup:
     mise install
     npm ci
+    npx playwright install chromium firefox
     @for pair in gjs:gjs glib-compile-schemas:glib2 gnome-shell:gnome-shell \
         gnome-extensions:gnome-shell rsync:rsync zip:zip unzip:unzip jq:jq; do \
         tool="${pair%%:*}"; package="${pair#*:}"; \
@@ -42,6 +43,10 @@ lint:
 # Run the unit suite
 test *args:
     npx vitest run {{ args }}
+
+# The docs site in Chromium and Firefox: accessibility, layout, no JavaScript
+test-docs *args:
+    npx playwright test {{ args }}
 
 # Unit suite with a coverage report
 coverage:
@@ -108,10 +113,10 @@ logs:
     journalctl -f -o cat /usr/bin/gnome-shell | grep -i --line-buffered "quicktiler"
 
 # Remove build output
-[confirm("remove node_modules, coverage, the zip and compiled schemas?")]
+[confirm("remove node_modules, coverage, test output, the zip and compiled schemas?")]
 clean:
-    rm -rf node_modules coverage
+    rm -rf node_modules coverage test-results playwright-report
     rm -f {{ uuid }}.shell-extension.zip schemas/gschemas.compiled
 
 # Everything CI runs, in order
-ci: lint test security build
+ci: lint test test-docs security build
