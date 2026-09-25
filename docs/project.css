@@ -1,0 +1,224 @@
+/*
+ * QuickTiler's additions to the shared Ghost Assembly docs template.
+ *
+ * style.css is the template and is kept byte-identical across the quick*
+ * sites; what only this site needs lives here, loaded after it. It uses the
+ * template's tokens throughout. The one exception is the hero drawing, which
+ * takes GNOME's own colors, as the template's drawing does.
+ */
+
+/* ---- The product drawing: QuickTiler's menu ------------------------------ */
+
+/* QuickTiler adds nothing to the top bar, so with the clock hidden on a phone
+ * the system icons are pushed to the end by themselves. */
+.gtop .sys {
+    margin-inline-start: auto;
+}
+
+/* On the narrowest phones two tiles side by side cut "QuickTiler" to "Quic…",
+ * so the neighboring tile, which is only scenery, steps aside. */
+@media (max-width: 420px) {
+    .qs-row {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .qs-row .tile:not(.on) {
+        display: none;
+    }
+}
+
+/* The tile's own icon, drawn from icons/quicktiler-symbolic.svg. */
+.qt-icon {
+    display: block;
+}
+
+/* A PopupSubMenuMenuItem: the group's name and GNOME's disclosure triangle. */
+.qt-sub {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 40px;
+    padding-inline: 12px;
+    border-radius: 12px;
+    font-size: 14px;
+}
+
+.qt-sub.open {
+    background: rgb(255 255 255 / 0.07);
+}
+
+/* The open section's rows, on the darker ground GNOME gives a submenu. */
+.qt-subm {
+    margin: 2px 0 4px;
+    padding: 4px 0;
+    border-radius: 12px;
+    background: rgb(0 0 0 / 0.18);
+}
+
+.qt-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 36px;
+    padding-inline: 24px 12px;
+    font-size: 14px;
+}
+
+/* The accelerator label, dimmed as modules/panel.js dims it (opacity 160). */
+.qt-acc {
+    color: rgb(255 255 255 / 0.63);
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+/* ---- The module table ------------------------------------------------- */
+
+/* A file name is one word: breaking "windows.js" after "windows.j" reads as a
+ * typo, so the name column keeps its width instead. */
+.modules td:first-child code {
+    overflow-wrap: normal;
+    white-space: nowrap;
+}
+
+/* ---- Zones and their cycles --------------------------------------------- */
+
+.cycles {
+    display: grid;
+    gap: 16px;
+    margin: 32px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+/* Left and right side by side on a wide screen; center, with three steps,
+ * across both. */
+@media (min-width: 1101px) {
+    .cycles {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .cycle:last-child {
+        grid-column: 1 / -1;
+    }
+}
+
+.cycle {
+    padding: 18px 20px 20px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--raised);
+}
+
+.section .cycle-name {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 14px;
+    margin: 0;
+    font-weight: 650;
+}
+
+.cycle ol {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 12px 34px;
+    margin: 16px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.cycle li {
+    position: relative;
+    display: grid;
+    justify-items: center;
+    gap: 8px;
+    width: 128px;
+    color: var(--mist);
+    font-size: 14px;
+    text-align: center;
+}
+
+/* A chevron between steps; drawn, so there is no arrow character to read out. */
+.cycle li + li::before {
+    content: '';
+    position: absolute;
+    inset-block-start: 32px;
+    inset-inline-start: -22px;
+    width: 8px;
+    height: 8px;
+    border-block-start: 2px solid var(--mist);
+    border-inline-end: 2px solid var(--mist);
+    transform: rotate(45deg);
+}
+
+.screen {
+    position: relative;
+    width: 128px;
+    aspect-ratio: 16 / 9;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--sunken);
+}
+
+.screen i {
+    position: absolute;
+    margin: 3px;
+    border-radius: 3px;
+    background: var(--spectrum);
+}
+
+.z-left-quarter {
+    inset: 0 75% 0 0;
+}
+
+.z-left-half {
+    inset: 0 50% 0 0;
+}
+
+.z-right-quarter {
+    inset: 0 0 0 75%;
+}
+
+.z-right-half {
+    inset: 0 0 0 50%;
+}
+
+.z-center-half {
+    inset: 0 25%;
+}
+
+.z-center-top {
+    inset: 0 25% 66.667%;
+}
+
+.z-center-bottom {
+    inset: 33.333% 25% 0;
+}
+
+/* Phones: small enough that the three center steps still share one row, so a
+ * chevron never starts a line. */
+@media (max-width: 760px) {
+    .cycle {
+        padding-inline: 16px;
+    }
+
+    .cycle ol {
+        gap: 12px 22px;
+    }
+
+    .cycle li,
+    .screen {
+        width: 76px;
+    }
+
+    .cycle li {
+        font-size: 13px;
+    }
+
+    .cycle li + li::before {
+        inset-block-start: 17px;
+        inset-inline-start: -16px;
+    }
+}

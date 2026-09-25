@@ -119,6 +119,7 @@ schema path and are set again in the preferences window.
 ```
 just            # list every recipe
 just test       # unit suite, runs on Node in about a fifth of a second
+just test-docs  # the docs site in Chromium and Firefox
 just lint       # eslint, prettier, gschema and shellcheck
 just ci         # everything CI runs
 just test-live  # headless Shell smoke test, then the packer check
