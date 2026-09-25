@@ -56,7 +56,7 @@ function describe(window) {
     return {
         ...manageable,
         fullscreen: window.is_fullscreen(),
-        maximized: window.maximized_horizontally && window.maximized_vertically,
+        maximized: window.is_maximized(),
         allowsMove: window.allows_move(),
         allowsResize: window.allows_resize(),
     };
@@ -354,13 +354,14 @@ export class QuickTiler {
      * ignores a resize along that axis. _toggleMaximize deliberately tests the
      * conjunction instead, for a different reason given there.
      *
+     * unmaximize() alone is enough. In Mutter 17 and 18 (GNOME 49 and 50) it is
+     * set_unmaximize_flags(BOTH), so calling both did the work twice.
+     *
      * @param {Meta.Window} window Window to unmaximize.
      */
     _unmaximize(window) {
-        if (window.maximized_horizontally || window.maximized_vertically) {
-            window.set_unmaximize_flags(Meta.MaximizeFlags.BOTH);
+        if (window.maximized_horizontally || window.maximized_vertically)
             window.unmaximize();
-        }
     }
 
     /**
@@ -408,11 +409,11 @@ export class QuickTiler {
      * @param {Meta.Window} window Window to maximize, already policy-checked.
      */
     _toggleMaximize(window) {
-        // The conjunction, where _unmaximize uses the disjunction: a window
+        // is_maximized() is the conjunction — both directions, in Mutter 17
+        // and 18 alike — where _unmaximize uses the disjunction: a window
         // maximized in only one direction should finish maximizing rather than
         // restore, which is what GNOME's own maximize key does.
-        if (window.maximized_horizontally && window.maximized_vertically)
-            this._unmaximize(window);
+        if (window.is_maximized()) this._unmaximize(window);
         else window.maximize();
     }
 
@@ -480,20 +481,56 @@ export class QuickTiler {
         const neighbor = this._neighbor(window, direction, PLACE);
         if (!neighbor) return;
 
-        // Unmaximize both before reading their geometry. A maximized window's
-        // frame rect is the entire work area, so capturing it first would hand
-        // the neighbor a work-area-sized frame with no maximized flag: it looks
-        // maximized, Mutter's own restore no longer applies to it, and matchZone
-        // reports no zone for it at all. isPlaceable admits maximized windows by
-        // design, so this path is reachable.
-        this._unmaximize(window);
-        this._unmaximize(neighbor);
+        // Everything is read before anything changes. On Wayland, unmaximize()
+        // and move_resize_frame() only send the client a configure; the frame
+        // rect changes when the client commits, which is after this handler
+        // has returned. Reading a rect after unmaximizing therefore answers
+        // the maximized frame — the whole work area — and handing that to the
+        // neighbor gives it a frame that looks maximized, carries no maximized
+        // flag, escapes Mutter's restore and matches no zone. isPlaceable
+        // admits maximized windows by design, so this path is reachable.
+        const from = this._slot(window);
+        const to = this._slot(neighbor);
 
-        const from = window.get_frame_rect();
-        const to = neighbor.get_frame_rect();
+        this._occupy(window, to);
+        this._occupy(neighbor, from);
+    }
 
-        this._moveResize(window, to);
-        this._moveResize(neighbor, from);
+    /**
+     * Where a window is, in the terms _occupy needs to put another one there.
+     *
+     * @param {Meta.Window} window Window to read.
+     * @returns {{rect: object, maximized: boolean, monitor: number}} Its slot.
+     */
+    _slot(window) {
+        return {
+            rect: window.get_frame_rect(),
+            maximized: window.is_maximized(),
+            monitor: window.get_monitor(),
+        };
+    }
+
+    /**
+     * Put a window where another one was.
+     *
+     * A maximized slot is taken by maximizing, on that slot's monitor, rather
+     * than by copying its rect: the rect of a maximized window is its work
+     * area, not a geometry anything else should be given, and maximizing keeps
+     * Mutter's own restore working for the window that arrives.
+     *
+     * @param {Meta.Window} window Window to move.
+     * @param {{rect: object, maximized: boolean, monitor: number}} slot Where
+     *   it goes, from {@link _slot}.
+     */
+    _occupy(window, slot) {
+        if (!slot.maximized) {
+            this._moveResize(window, slot.rect);
+            return;
+        }
+
+        if (slot.monitor >= 0 && slot.monitor !== window.get_monitor())
+            window.move_to_monitor(slot.monitor);
+        window.maximize();
     }
 
     /**
