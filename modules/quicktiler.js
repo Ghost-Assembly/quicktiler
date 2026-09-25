@@ -310,11 +310,19 @@ export class QuickTiler {
      * unmanaging, and briefly while one is being created — so a keypress that
      * lands on such a window would otherwise throw out of the handler.
      *
+     * get_monitor() is -1 for a window with no monitor, which is what a window
+     * being unmanaged has (meta_window_get_monitor in window.c), and
+     * get_work_area_for_monitor fails a g_return_if_fail for it rather than
+     * answering anything usable. So that is a no-op too.
+     *
      * @param {Meta.Window} window Window to locate.
      * @param {number} [monitor] Monitor to read, defaulting to the window's own.
-     * @returns {Mtk.Rectangle|null} Work area, or null if the window has no workspace.
+     * @returns {Mtk.Rectangle|null} Work area, or null if the window has no
+     *   workspace or no monitor.
      */
     _workArea(window, monitor = window.get_monitor()) {
+        if (monitor < 0) return null;
+
         const workspace = window.get_workspace();
         return workspace ? workspace.get_work_area_for_monitor(monitor) : null;
     }
@@ -552,6 +560,10 @@ export class QuickTiler {
 
         // Read the zone before the move: afterwards the window is measured
         // against a different work area and would no longer match.
+        //
+        // Returning here also covers a window with no monitor, which
+        // _workArea answers null for: Mutter's move_to_monitor reads the
+        // window's current monitor unchecked.
         const source = this._workArea(window);
         if (!source) return;
 

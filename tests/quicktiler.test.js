@@ -421,6 +421,30 @@ describe('QuickTiler', () => {
         });
     });
 
+    // Mutter's get_monitor() answers -1 for a window with no monitor, which is
+    // what a window being unmanaged has. Passing that to
+    // get_work_area_for_monitor fails a g_return_if_fail in Mutter.
+    describe('a window with no monitor', () => {
+        it('is not tiled', () => {
+            start();
+            const window = world.workspace.add(new FakeWindow({ monitor: -1 }))[0];
+            world.focus(window);
+
+            expect(() => Main.press('tile-left')).not.toThrow();
+            expect(window.moves).toHaveLength(0);
+        });
+
+        it('is not moved to another monitor', () => {
+            start([WIDE, SECOND]);
+            const window = world.workspace.add(new FakeWindow({ monitor: -1 }))[0];
+            world.focus(window);
+
+            expect(() => Main.press('move-monitor-next')).not.toThrow();
+            expect(window.get_monitor()).toBe(-1);
+            expect(window.moves).toHaveLength(0);
+        });
+    });
+
     describe('maximize toggle', () => {
         it('maximizes an ordinary window through Mutter, not a zone', () => {
             start();

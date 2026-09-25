@@ -207,8 +207,16 @@ export class FakeWorkspace {
         this._windows = [];
     }
 
+    // Negative monitors are refused before .at(): .at(-1) is the last monitor,
+    // which let a window with no monitor (get_monitor() is -1 while one is
+    // unmanaging) read a real work area here. Mutter's meta_workspace_get_work_area_for_monitor fails
+    // a g_return_if_fail for a monitor that does not exist and hands back an
+    // unset rectangle, so the fake refuses loudly instead.
     get_work_area_for_monitor(monitor) {
-        return this._workAreas.at(monitor);
+        const area = monitor >= 0 ? this._workAreas.at(monitor) : undefined;
+        if (!area) throw new Error(`no monitor ${monitor}`);
+
+        return area;
     }
 
     list_windows() {
