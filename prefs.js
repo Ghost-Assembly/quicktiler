@@ -116,8 +116,8 @@ const ShortcutRow = GObject.registerClass(
                     mask,
                 );
 
-                // Mutter registers the first action to claim an accelerator and
-                // refuses the rest, so leaving both set would show a shortcut
+                // Mutter registers both actions and indexes the combination to
+                // only one of them, so leaving both set would show a shortcut
                 // here that does nothing at all. Clear the previous holder,
                 // which is what GNOME Settings does.
                 for (const other of conflictingActions(this._key, accelerator, key =>
@@ -130,6 +130,33 @@ const ShortcutRow = GObject.registerClass(
                 return Gdk.EVENT_STOP;
             });
             dialog.add_controller(controller);
+
+            // Mutter runs global keybindings before a focused client sees the
+            // key, unless that client's surface inhibits system shortcuts
+            // (keybindings.c, process_event). Without this the dialog could
+            // never record a combination already bound — to one of this
+            // extension's own actions, or to anything else — because pressing
+            // it would perform that action instead. Rebinding one of ours over
+            // another is exactly the case conflictingActions exists for.
+            //
+            // The first time, the Shell asks whether to allow it
+            // (inhibitShortcutsDialog.js) and remembers the answer in the
+            // permission store; GNOME Settings is the only app it allows
+            // without asking. If it is refused, the dialog still captures every
+            // combination nothing else holds.
+            //
+            // Inhibited on map rather than here because the surface only
+            // exists once the window is realized, and restored on unmap so
+            // that closing the dialog any way at all gives the shortcuts back.
+            dialog.connect('map', () => {
+                const surface = dialog.get_surface();
+                if (surface instanceof Gdk.Toplevel)
+                    surface.inhibit_system_shortcuts(null);
+            });
+            dialog.connect('unmap', () => {
+                const surface = dialog.get_surface();
+                if (surface instanceof Gdk.Toplevel) surface.restore_system_shortcuts();
+            });
 
             dialog.present();
         }

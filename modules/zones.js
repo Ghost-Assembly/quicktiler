@@ -100,8 +100,9 @@ export function projectZone(zone, workArea, gap = 0) {
  * counted as occupying it.
  *
  * Applications do not always take the size they are given: terminals snap to
- * whole character cells, and some clients enforce size increments or minimum
- * sizes.
+ * whole character cells, and some clients enforce size increments. A minimum
+ * size larger than the zone is a different matter — the frame can be off by
+ * hundreds of pixels — and is handled by the anchor match in matchZone.
  *
  * @type {number}
  */
@@ -114,6 +115,12 @@ export const MATCH_TOLERANCE = 8;
  * window's own geometry on every keypress, so cycling works on windows that
  * were placed by something else, and there is no per-window table to leak or go
  * stale.
+ *
+ * An exact match — every edge within the tolerance — wins. Failing that, a
+ * window anchored at a zone's origin and at least as large as the zone is
+ * taken to be in it: that is what Mutter leaves behind when a zone is smaller
+ * than the window's minimum size, because it enlarges the frame and keeps the
+ * origin it was given. See {@link anchoredZone}.
  *
  * @param {{x: number, y: number, width: number, height: number}} rect Window frame rectangle.
  * @param {{x: number, y: number, width: number, height: number}} workArea Monitor work area.
@@ -143,6 +150,51 @@ export function matchZone(rect, workArea, gap = 0, tolerance = MATCH_TOLERANCE) 
         const distance = deltas.reduce((sum, delta) => sum + delta, 0);
         if (distance < bestDistance) {
             bestDistance = distance;
+            best = zone.id;
+        }
+    }
+
+    return best ?? anchoredZone(rect, workArea, gap, tolerance);
+}
+
+/**
+ * The zone a window was most likely placed into and then enlarged from.
+ *
+ * Without this, a window whose minimum size exceeds a zone never matches it,
+ * so nextZone restarts at the head of the cycle on every press: on a
+ * 1920x1080 work area with the default gap, center-top is about 350 pixels
+ * tall, and anything with a larger minimum height bounced between center-half
+ * and center-top and never reached center-bottom.
+ *
+ * Of the zones that fit, the smallest is chosen. A frame that covers several
+ * zones sharing an origin was enlarged from the smallest of them at least as
+ * plausibly as from any other, and assuming the largest can strand the cycle:
+ * center-top and center-half share an origin, so a window taller than both
+ * would read as center-half, advance to center-top, land on the same frame,
+ * and read as center-half again.
+ *
+ * @param {{x: number, y: number, width: number, height: number}} rect Window frame rectangle.
+ * @param {{x: number, y: number, width: number, height: number}} workArea Monitor work area.
+ * @param {number} gap The gap the zones were projected with.
+ * @param {number} tolerance Maximum deviation of the origin, and by how much
+ *   the frame may fall short of the zone's size, in pixels.
+ * @returns {string|null} Zone id, or null if no zone is anchored there.
+ */
+function anchoredZone(rect, workArea, gap, tolerance) {
+    let best = null;
+    let bestArea = Infinity;
+
+    for (const zone of ZONES) {
+        const candidate = projectZone(zone, workArea, gap);
+
+        if (Math.abs(rect.x - candidate.x) > tolerance) continue;
+        if (Math.abs(rect.y - candidate.y) > tolerance) continue;
+        if (rect.width + tolerance < candidate.width) continue;
+        if (rect.height + tolerance < candidate.height) continue;
+
+        const area = candidate.width * candidate.height;
+        if (area < bestArea) {
+            bestArea = area;
             best = zone.id;
         }
     }

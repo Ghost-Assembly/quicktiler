@@ -3,9 +3,11 @@
 // This file is deliberately thin: it owns a settings object, a QuickTiler and a
 // Panel, and its only real job is pairing each construction with a teardown.
 //
-// There are no timers and no work between keypresses. There are actors, but
-// only the quick settings tile, and only while show-quick-settings is on —
-// switch it off and the extension goes back to holding nothing but keybindings.
+// There are no timers. There are actors, and one global signal — the display's
+// notify::focus-window, which lets a menu row act on the window that was
+// focused before the menu opened — but only for the quick settings tile, and
+// only while show-quick-settings is on. Switch it off and the extension goes
+// back to holding nothing but keybindings and its settings watches.
 
 import {
     Extension,

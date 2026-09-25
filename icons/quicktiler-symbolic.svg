@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" height="16px" width="16px" viewBox="0 0 16 16">
     <!--
-        The zone set, drawn: a half on the left, two quarters stacked on the
-        right. That is the 1/2 + 1/4 + 1/4 layout from modules/zones.js, which
-        is what the extension is for.
+        Zone tiling in general, not a layout from modules/zones.js: a window
+        in a half on the left, two stacked on the right. The zone set has no
+        stacked quarters (its right-hand zones are full height), but at
+        16 pixels three tiles read as tiling, where an exact zone would not.
 
         The comment sits inside the svg element deliberately. A comment before
         the opening tag defeats gdk-pixbuf's format sniffing, and the icon then

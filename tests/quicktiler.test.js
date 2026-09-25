@@ -56,9 +56,9 @@ describe('QuickTiler', () => {
             }
         });
 
-        // Mutter returns KeyBindingAction.NONE when two actions share an
-        // accelerator. Recording the key anyway made disable() call
-        // removeKeybinding on a binding that was never registered.
+        // Mutter returns KeyBindingAction.NONE when a keybinding of the same
+        // name is already registered. Recording the key anyway made disable()
+        // call removeKeybinding on a binding that was never registered.
         it('does not track a keybinding Mutter refused', () => {
             Main.refuse.add('tile-left');
             start();
@@ -127,10 +127,10 @@ describe('QuickTiler', () => {
             expect(Main.removeCalls).toHaveLength(ACTION_KEYS.length);
         });
 
-        // The idempotence guard cannot be `_bindings.length`: only accelerators
-        // Mutter accepted are recorded there, so someone who has given every
-        // action a colliding shortcut would leave it empty while the bindings
-        // are registered, and every unpause would re-run the loop and re-warn.
+        // The idempotence guard cannot be `_bindings.length`: only keys Mutter
+        // accepted are recorded there, so with every name refused it would stay
+        // empty while the bindings are registered, and every unpause would
+        // re-run the loop and re-warn.
         it('does not re-warn on unpause when Mutter refused everything', () => {
             for (const key of ACTION_KEYS) Main.refuse.add(key);
             start();
@@ -328,14 +328,62 @@ describe('QuickTiler', () => {
             expect(window.get_frame_rect()).toEqual(zone('left-quarter'));
         });
 
+        // Mutter enlarges a frame to the client's minimum size, keeping the
+        // origin. center-top is about 350 pixels tall here, so a window with a
+        // taller minimum never matched it exactly, read as untiled, and went
+        // back to the head of the cycle on every press.
+        it('walks the center cycle for a window taller than a third', () => {
+            start();
+            const window = focusOne({ minSize: { width: 0, height: 500 } });
+            const origins = [];
+
+            for (let press = 0; press < 4; press += 1) {
+                Main.press('tile-center');
+                const { x, y } = window.get_frame_rect();
+                origins.push({ x, y });
+            }
+
+            const at = id => ({ x: zone(id).x, y: zone(id).y });
+            expect(origins).toEqual([
+                at('center-half'),
+                at('center-top'),
+                at('center-bottom'),
+                at('center-half'),
+            ]);
+            expect(window.get_frame_rect().height).toBe(zone('center-half').height);
+            expect(window.moves.at(-2).height).toBe(zone('center-bottom').height);
+        });
+
+        it('walks the left cycle for a window wider than a quarter', () => {
+            start();
+            const window = focusOne({ minSize: { width: 600, height: 0 } });
+
+            Main.press('tile-left');
+            expect(window.get_frame_rect().width).toBe(600);
+            Main.press('tile-left');
+            expect(window.get_frame_rect()).toEqual(zone('left-half'));
+            Main.press('tile-left');
+            expect(window.moves.at(-1)).toMatchObject(zone('left-quarter'));
+        });
+
+        it('treats a maximized window as in no zone, whatever its frame', () => {
+            start();
+            const window = focusOne({ maximized: true });
+
+            Main.press('tile-left');
+
+            expect(window.get_frame_rect()).toEqual(zone('left-quarter'));
+        });
+
         it('unmaximizes before placing, so the frame resize takes effect', () => {
             start();
             const window = focusOne({ maximized: true });
 
             Main.press('tile-left');
 
-            expect(window.maximized_horizontally).toBe(false);
-            expect(window.unmaximizeFlags).toBe(Meta.MaximizeFlags.BOTH);
+            expect(window.is_maximized()).toBe(false);
+            expect(window.maximized_vertically).toBe(false);
+            expect(window.unmaximizeCalls).toBe(1);
             expect(window.get_frame_rect()).toEqual(zone('left-quarter'));
         });
 
@@ -370,6 +418,30 @@ describe('QuickTiler', () => {
 
             expect(() => Main.press('tile-left')).not.toThrow();
             expect(orphan.moves).toHaveLength(0);
+        });
+    });
+
+    // Mutter's get_monitor() answers -1 for a window with no monitor, which is
+    // what a window being unmanaged has. Passing that to
+    // get_work_area_for_monitor fails a g_return_if_fail in Mutter.
+    describe('a window with no monitor', () => {
+        it('is not tiled', () => {
+            start();
+            const window = world.workspace.add(new FakeWindow({ monitor: -1 }))[0];
+            world.focus(window);
+
+            expect(() => Main.press('tile-left')).not.toThrow();
+            expect(window.moves).toHaveLength(0);
+        });
+
+        it('is not moved to another monitor', () => {
+            start([WIDE, SECOND]);
+            const window = world.workspace.add(new FakeWindow({ monitor: -1 }))[0];
+            world.focus(window);
+
+            expect(() => Main.press('move-monitor-next')).not.toThrow();
+            expect(window.get_monitor()).toBe(-1);
+            expect(window.moves).toHaveLength(0);
         });
     });
 
@@ -503,27 +575,106 @@ describe('QuickTiler', () => {
             expect(right.get_frame_rect()).toEqual(a);
         });
 
-        // Both rects used to be read before _moveResize unmaximized, so the
-        // neighbor received the maximized window's work-area-sized frame
-        // without the maximized flag: it looked maximized, Mutter's restore no
-        // longer applied, and matchZone reported no zone for it.
-        it('does not hand the neighbor a work-area frame when one is maximized', () => {
+        // A maximized window's frame rect is the work area, and on Wayland it
+        // stays the work area after unmaximize() until the client commits. So
+        // there is no moment at which its restored geometry can be read back,
+        // and copying whatever the rect says hands the neighbor a
+        // work-area-sized frame with no maximized flag: it looks maximized,
+        // Mutter's restore no longer applies, and matchZone finds no zone.
+        // The neighbor is maximized instead, and the maximized window takes
+        // the neighbor's geometry, read before anything moved.
+        it.each([
+            ['synchronously, as on X11', false],
+            ['when the client commits later, as on Wayland', true],
+        ])('swaps with a maximized window %s', (_how, deferred) => {
             start();
             const restore = { x: 100, y: 100, width: 400, height: 300 };
+            const other = { x: 1200, y: 0, width: 500, height: 200 };
             const [big, small] = world.workspace.add(
-                new FakeWindow({ rect: restore, maximized: true }),
-                new FakeWindow({ rect: { x: 1200, y: 0, width: 500, height: 200 } }),
+                new FakeWindow({ rect: restore, maximized: true, deferred }),
+                new FakeWindow({ rect: other, deferred }),
             );
             world.focus(big);
 
             Main.press('swap-right');
+            big.commit();
+            small.commit();
 
-            expect(small.get_frame_rect()).not.toEqual(
-                expect.objectContaining({ width: WIDE.width, height: WIDE.height }),
+            expect(big.is_maximized()).toBe(false);
+            expect(big.get_frame_rect()).toEqual(other);
+            expect(small.is_maximized()).toBe(true);
+            expect(small.moves).toHaveLength(0);
+        });
+
+        it('keeps the maximized one maximized when the neighbor is too', () => {
+            start([WIDE, SECOND]);
+            const [left, right] = world.workspace.add(
+                new FakeWindow({
+                    rect: { x: 100, y: 100, width: 400, height: 300 },
+                    maximized: true,
+                    deferred: true,
+                }),
+                new FakeWindow({
+                    rect: { x: 2000, y: 100, width: 400, height: 300 },
+                    monitor: 1,
+                    maximized: true,
+                    deferred: true,
+                }),
             );
-            expect(small.get_frame_rect()).toEqual(restore);
-            expect(big.maximized_horizontally).toBe(false);
-            expect(small.maximized_horizontally).toBe(false);
+            world.focus(left);
+
+            Main.press('swap-right');
+            left.commit();
+            right.commit();
+
+            expect(left.is_maximized()).toBe(true);
+            expect(right.is_maximized()).toBe(true);
+            expect(left.get_monitor()).toBe(1);
+            expect(right.get_monitor()).toBe(0);
+            expect(left.get_frame_rect()).toEqual(SECOND);
+            expect(right.get_frame_rect()).toEqual(WIDE);
+        });
+
+        it('maximizes onto the neighbor monitor when that is where it was', () => {
+            start([WIDE, SECOND]);
+            const tiled = { x: 8, y: 8, width: 472, height: 1064 };
+            const [left, right] = world.workspace.add(
+                new FakeWindow({ rect: tiled, deferred: true }),
+                new FakeWindow({
+                    rect: { x: 2000, y: 100, width: 400, height: 300 },
+                    monitor: 1,
+                    maximized: true,
+                    deferred: true,
+                }),
+            );
+            world.focus(left);
+
+            Main.press('swap-right');
+            left.commit();
+            right.commit();
+
+            expect(left.get_monitor()).toBe(1);
+            expect(left.is_maximized()).toBe(true);
+            expect(right.is_maximized()).toBe(false);
+            expect(right.get_frame_rect()).toEqual(tiled);
+        });
+
+        it('exchanges geometry read before either window moved', () => {
+            start();
+            const a = { x: 0, y: 0, width: 300, height: 400 };
+            const b = { x: 900, y: 100, width: 500, height: 200 };
+            const [left, right] = world.workspace.add(
+                new FakeWindow({ rect: a, deferred: true }),
+                new FakeWindow({ rect: b, deferred: true }),
+            );
+            world.focus(left);
+
+            Main.press('swap-right');
+            left.commit();
+            right.commit();
+
+            expect(left.get_frame_rect()).toEqual(b);
+            expect(right.get_frame_rect()).toEqual(a);
         });
 
         it('exchanges leftwards as well as rightwards', () => {
@@ -563,7 +714,7 @@ describe('QuickTiler', () => {
             expect(window.moves).toHaveLength(0);
         });
 
-        it('moves to the next monitor and wraps back round', () => {
+        it('moves to the next monitor and wraps back around', () => {
             start([WIDE, SECOND]);
             const window = world.workspace.add(new FakeWindow())[0];
             world.focus(window);

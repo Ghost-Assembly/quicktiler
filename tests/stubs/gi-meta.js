@@ -6,8 +6,7 @@
 
 export default {
     WindowType: { NORMAL: 0, DIALOG: 1, DOCK: 2 },
-    MaximizeFlags: { HORIZONTAL: 1, VERTICAL: 2, BOTH: 3 },
     KeyBindingFlags: { NONE: 0, IGNORE_AUTOREPEAT: 1 },
-    // Mutter returns this from add_keybinding when registration fails.
+    // Mutter returns this from add_keybinding when the name is already registered.
     KeyBindingAction: { NONE: 0 },
 };

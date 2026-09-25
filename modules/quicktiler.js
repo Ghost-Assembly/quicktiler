@@ -56,7 +56,7 @@ function describe(window) {
     return {
         ...manageable,
         fullscreen: window.is_fullscreen(),
-        maximized: window.maximized_horizontally && window.maximized_vertically,
+        maximized: window.is_maximized(),
         allowsMove: window.allows_move(),
         allowsResize: window.allows_resize(),
     };
@@ -87,7 +87,8 @@ export class QuickTiler {
      */
     constructor(settings) {
         this._settings = settings;
-        this._gap = settings.get_int(KEYS.GAP);
+        // Read in enable(), which always runs before anything uses it.
+        this._gap = 0;
         this._watches = new SettingsWatcher(settings);
         this._bindings = [];
         this._bound = false;
@@ -219,10 +220,10 @@ export class QuickTiler {
      *
      * Idempotent, because the tile can be clicked twice faster than anyone can
      * think about it. The guard is a flag rather than `this._bindings.length`:
-     * only accelerators Mutter accepted are recorded there, so a user who has
-     * given every action a colliding shortcut would leave it empty while the
-     * bindings are conceptually registered, and a length check would re-run the
-     * whole loop and re-warn on every unpause.
+     * only keys Mutter accepted are recorded there, so if every name were
+     * refused it would stay empty while the bindings are conceptually
+     * registered, and a length check would re-run the whole loop and re-warn
+     * on every unpause.
      */
     bindKeys() {
         if (this._bound) return;
@@ -230,9 +231,13 @@ export class QuickTiler {
 
         const bind = (key, handler) => {
             // addKeybinding returns NONE when registration fails, which happens
-            // when two actions have been given the same accelerator. Recording a
-            // key that was never registered makes disable() call
-            // removeKeybinding on it, and the Shell warns.
+            // when a keybinding of the same *name* is already registered —
+            // another extension that also calls one 'focus-left', say. It is
+            // not how a shared accelerator shows up: two names given the same
+            // combination both register, and Mutter indexes one over the other
+            // with a warning of its own. Recording a key that was never
+            // registered makes disable() call removeKeybinding on it, and the
+            // Shell warns.
             const action = Main.wm.addKeybinding(
                 key,
                 this._settings,
@@ -244,7 +249,7 @@ export class QuickTiler {
 
             if (action === Meta.KeyBindingAction.NONE) {
                 console.warn(
-                    `[quicktiler] could not bind ${key}; is it already in use?`,
+                    `[quicktiler] could not bind ${key}; is a keybinding with that name already registered?`,
                 );
                 return;
             }
@@ -310,17 +315,30 @@ export class QuickTiler {
      * unmanaging, and briefly while one is being created — so a keypress that
      * lands on such a window would otherwise throw out of the handler.
      *
+     * get_monitor() is -1 for a window with no monitor, which is what a window
+     * being unmanaged has (meta_window_get_monitor in window.c), and
+     * get_work_area_for_monitor fails a g_return_if_fail for it rather than
+     * answering anything usable. So that is a no-op too.
+     *
      * @param {Meta.Window} window Window to locate.
      * @param {number} [monitor] Monitor to read, defaulting to the window's own.
-     * @returns {Mtk.Rectangle|null} Work area, or null if the window has no workspace.
+     * @returns {Mtk.Rectangle|null} Work area, or null if the window has no
+     *   workspace or no monitor.
      */
     _workArea(window, monitor = window.get_monitor()) {
+        if (monitor < 0) return null;
+
         const workspace = window.get_workspace();
         return workspace ? workspace.get_work_area_for_monitor(monitor) : null;
     }
 
     /**
      * Which zone a window currently occupies, read back from its geometry.
+     *
+     * A maximized window is in none. Its frame is the work area, and as the
+     * largest frame anchored at the work area's corner, matchZone's anchor
+     * match — meant for windows enlarged to their minimum size — would read
+     * it as enlarged from left-quarter.
      *
      * @param {Meta.Window} window Window to inspect.
      * @param {{x: number, y: number, width: number, height: number}} workArea
@@ -329,6 +347,8 @@ export class QuickTiler {
      * @returns {string|null} Zone id, or null if it is in none.
      */
     _currentZone(window, workArea) {
+        if (window.is_maximized()) return null;
+
         return matchZone(window.get_frame_rect(), workArea, this._gap);
     }
 
@@ -354,13 +374,14 @@ export class QuickTiler {
      * ignores a resize along that axis. _toggleMaximize deliberately tests the
      * conjunction instead, for a different reason given there.
      *
+     * unmaximize() alone is enough. In Mutter 17 and 18 (GNOME 49 and 50) it is
+     * set_unmaximize_flags(BOTH), so calling both did the work twice.
+     *
      * @param {Meta.Window} window Window to unmaximize.
      */
     _unmaximize(window) {
-        if (window.maximized_horizontally || window.maximized_vertically) {
-            window.set_unmaximize_flags(Meta.MaximizeFlags.BOTH);
+        if (window.maximized_horizontally || window.maximized_vertically)
             window.unmaximize();
-        }
     }
 
     /**
@@ -408,11 +429,11 @@ export class QuickTiler {
      * @param {Meta.Window} window Window to maximize, already policy-checked.
      */
     _toggleMaximize(window) {
-        // The conjunction, where _unmaximize uses the disjunction: a window
+        // is_maximized() is the conjunction — both directions, in Mutter 17
+        // and 18 alike — where _unmaximize uses the disjunction: a window
         // maximized in only one direction should finish maximizing rather than
         // restore, which is what GNOME's own maximize key does.
-        if (window.maximized_horizontally && window.maximized_vertically)
-            this._unmaximize(window);
+        if (window.is_maximized()) this._unmaximize(window);
         else window.maximize();
     }
 
@@ -480,20 +501,56 @@ export class QuickTiler {
         const neighbor = this._neighbor(window, direction, PLACE);
         if (!neighbor) return;
 
-        // Unmaximize both before reading their geometry. A maximized window's
-        // frame rect is the entire work area, so capturing it first would hand
-        // the neighbor a work-area-sized frame with no maximized flag: it looks
-        // maximized, Mutter's own restore no longer applies to it, and matchZone
-        // reports no zone for it at all. isPlaceable admits maximized windows by
-        // design, so this path is reachable.
-        this._unmaximize(window);
-        this._unmaximize(neighbor);
+        // Everything is read before anything changes. On Wayland, unmaximize()
+        // and move_resize_frame() only send the client a configure; the frame
+        // rect changes when the client commits, which is after this handler
+        // has returned. Reading a rect after unmaximizing therefore answers
+        // the maximized frame — the whole work area — and handing that to the
+        // neighbor gives it a frame that looks maximized, carries no maximized
+        // flag, escapes Mutter's restore and matches no zone. isPlaceable
+        // admits maximized windows by design, so this path is reachable.
+        const from = this._slot(window);
+        const to = this._slot(neighbor);
 
-        const from = window.get_frame_rect();
-        const to = neighbor.get_frame_rect();
+        this._occupy(window, to);
+        this._occupy(neighbor, from);
+    }
 
-        this._moveResize(window, to);
-        this._moveResize(neighbor, from);
+    /**
+     * Where a window is, in the terms _occupy needs to put another one there.
+     *
+     * @param {Meta.Window} window Window to read.
+     * @returns {{rect: object, maximized: boolean, monitor: number}} Its slot.
+     */
+    _slot(window) {
+        return {
+            rect: window.get_frame_rect(),
+            maximized: window.is_maximized(),
+            monitor: window.get_monitor(),
+        };
+    }
+
+    /**
+     * Put a window where another one was.
+     *
+     * A maximized slot is taken by maximizing, on that slot's monitor, rather
+     * than by copying its rect: the rect of a maximized window is its work
+     * area, not a geometry anything else should be given, and maximizing keeps
+     * Mutter's own restore working for the window that arrives.
+     *
+     * @param {Meta.Window} window Window to move.
+     * @param {{rect: object, maximized: boolean, monitor: number}} slot Where
+     *   it goes, from {@link _slot}.
+     */
+    _occupy(window, slot) {
+        if (!slot.maximized) {
+            this._moveResize(window, slot.rect);
+            return;
+        }
+
+        if (slot.monitor >= 0 && slot.monitor !== window.get_monitor())
+            window.move_to_monitor(slot.monitor);
+        window.maximize();
     }
 
     /**
@@ -508,6 +565,10 @@ export class QuickTiler {
 
         // Read the zone before the move: afterwards the window is measured
         // against a different work area and would no longer match.
+        //
+        // Returning here also covers a window with no monitor, which
+        // _workArea answers null for: Mutter's move_to_monitor reads the
+        // window's current monitor unchecked.
         const source = this._workArea(window);
         if (!source) return;
 

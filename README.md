@@ -3,12 +3,15 @@
 Keyboard-driven zone tiling for GNOME Shell.
 
 Press a direction repeatedly and the focused window cycles through the zones on
-that side. There is no overlay and no grid picker: between keypresses the
-extension runs no timers and connects to no global signals.
+that side. There is no overlay and no grid picker, and the extension runs no
+timers.
 
 There is a quick settings tile, listing every action with the shortcut it
 currently holds — so the panel teaches the keyboard rather than replacing it.
-Turn it off and the extension holds no actors at all.
+While it is shown, the extension watches one global signal, the display's
+focus-window change, so a menu row knows which window to act on even while the
+open menu has taken focus. Turn the tile off and the extension holds no actors
+and connects to no global signals at all.
 
 **[Documentation →](https://ghost-assembly.github.io/quicktiler/)** — zones, architecture,
 testing, packaging and releasing.
@@ -69,7 +72,7 @@ tile because it has to be — with the tile hidden, it is the only way back.
 
 ## Install
 
-Needs GNOME 49 or newer. From the latest release, with no clone and no
+Needs GNOME Shell 49 or 50. From the latest release, with no clone and no
 toolchain — `gnome-extensions` ships with GNOME Shell itself:
 
 ```

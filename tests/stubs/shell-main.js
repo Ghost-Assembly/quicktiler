@@ -19,8 +19,10 @@ export const removeCalls = [];
 export const activated = [];
 
 /**
- * Keys that addKeybinding should refuse, standing in for an accelerator
- * collision. Mutter returns KeyBindingAction.NONE for those.
+ * Keys that addKeybinding should refuse, standing in for a keybinding name
+ * that is already registered — by another extension, say. Mutter returns
+ * KeyBindingAction.NONE for those (meta_prefs_add_keybinding refuses a name it
+ * already holds). Two names sharing an accelerator are not refused.
  */
 export const refuse = new Set();
 

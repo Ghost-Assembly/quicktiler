@@ -37,7 +37,12 @@ describe('QuickTiler with an action that has no handler', () => {
 
         const Main = await import('./stubs/shell-main.js');
         const { QuickTiler } = await import('../modules/quicktiler.js');
-        const { ACTION_KEYS } = await import('../modules/actions.js');
+        // ACTIONS, not ACTION_KEYS: the mock spreads the real module, so its
+        // ACTION_KEYS is the real list and never contains the bogus action.
+        // Filtering that would remove nothing and prove nothing.
+        const { ACTIONS } = await import('../modules/actions.js');
+        const keys = ACTIONS.map(action => action.key);
+        expect(keys).toContain('tile-diagonally');
 
         Main.reset();
         globalThis.global = { display: { get_focus_window: () => null } };
@@ -49,9 +54,9 @@ describe('QuickTiler with an action that has no handler', () => {
             '[quicktiler] no handler for action tile-diagonally',
         );
         expect(Main.registered.has('tile-diagonally')).toBe(false);
-        expect([...Main.registered.keys()].sort()).toEqual(
-            ACTION_KEYS.filter(key => key !== 'tile-diagonally').sort(),
-        );
+        const handled = keys.filter(key => key !== 'tile-diagonally');
+        expect(handled).toHaveLength(keys.length - 1);
+        expect([...Main.registered.keys()].sort()).toEqual(handled.sort());
 
         quicktiler.disable();
         expect(Main.registered.size).toBe(0);

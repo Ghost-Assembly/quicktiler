@@ -63,6 +63,34 @@ describe('conflictingActions', () => {
         expect(conflictingActions('tile-left', '', lookup)).toEqual([]);
     });
 
+    // The gschema writes modifiers Super first; prefs.js writes a rebound
+    // shortcut with Gtk.accelerator_name_with_keycode, which emits GTK's own
+    // order. The two spellings are one key combination to Mutter, and a raw
+    // string comparison let both actions hold it.
+    it('finds a conflict spelled with the modifiers in another order', () => {
+        const lookup = bindings({ 'tile-left': ['<Super><Control>Left'] });
+
+        expect(conflictingActions('swap-left', '<Control><Super>Left', lookup)).toEqual(
+            ['tile-left'],
+        );
+    });
+
+    it('finds a conflict spelled with a modifier alias', () => {
+        const lookup = bindings({ 'tile-left': ['<Super><Primary>Left'] });
+
+        expect(conflictingActions('swap-left', '<Control><Mod4>left', lookup)).toEqual([
+            'tile-left',
+        ]);
+    });
+
+    it('checks every accelerator an action holds, not just the first', () => {
+        const lookup = bindings({ 'tile-left': ['<Super>F5', '<Super>j'] });
+
+        expect(conflictingActions('swap-left', '<Super>j', lookup)).toEqual([
+            'tile-left',
+        ]);
+    });
+
     it('ignores an action whose accelerator merely resembles the new one', () => {
         const lookup = bindings({ 'swap-right': ['<Super><Shift>j'] });
 
