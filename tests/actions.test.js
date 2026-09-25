@@ -141,9 +141,10 @@ const MODIFIERS = new Set(['super', 'ctrl', 'control', 'shift', 'alt']);
  * HTML ones. Groups are collected by walking the matches rather than with one
  * regex spanning the whole run, which would need a nested quantifier.
  *
- * The tag pattern tolerates whitespace inside the angle brackets, because
- * Prettier wraps long lines there — `<kbd\n    >M</kbd\n>` is the same element
- * and must not be missed.
+ * The tag pattern tolerates attributes and whitespace inside the angle
+ * brackets: the docs site writes `<kbd class="kbd">`, and Prettier wraps long
+ * lines there — `<kbd class="kbd"\n    >M</kbd\n>` is the same element and
+ * must not be missed.
  *
  * Groups that are entirely modifiers are dropped: prose like "Super+Ctrl moves
  * windows" describes a convention, not a shortcut.
@@ -156,7 +157,7 @@ function documented(text) {
     let current = null;
     let previousEnd = -1;
 
-    for (const match of text.matchAll(/<kbd\s*>([^<]*)<\/kbd\s*>/g)) {
+    for (const match of text.matchAll(/<kbd\b[^>]*>([^<]*)<\/kbd\s*>/g)) {
         const joined =
             current !== null && /^\s*\+\s*$/.test(text.slice(previousEnd, match.index));
 
