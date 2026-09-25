@@ -56,9 +56,9 @@ describe('QuickTiler', () => {
             }
         });
 
-        // Mutter returns KeyBindingAction.NONE when two actions share an
-        // accelerator. Recording the key anyway made disable() call
-        // removeKeybinding on a binding that was never registered.
+        // Mutter returns KeyBindingAction.NONE when a keybinding of the same
+        // name is already registered. Recording the key anyway made disable()
+        // call removeKeybinding on a binding that was never registered.
         it('does not track a keybinding Mutter refused', () => {
             Main.refuse.add('tile-left');
             start();
@@ -127,10 +127,10 @@ describe('QuickTiler', () => {
             expect(Main.removeCalls).toHaveLength(ACTION_KEYS.length);
         });
 
-        // The idempotence guard cannot be `_bindings.length`: only accelerators
-        // Mutter accepted are recorded there, so someone who has given every
-        // action a colliding shortcut would leave it empty while the bindings
-        // are registered, and every unpause would re-run the loop and re-warn.
+        // The idempotence guard cannot be `_bindings.length`: only keys Mutter
+        // accepted are recorded there, so with every name refused it would stay
+        // empty while the bindings are registered, and every unpause would
+        // re-run the loop and re-warn.
         it('does not re-warn on unpause when Mutter refused everything', () => {
             for (const key of ACTION_KEYS) Main.refuse.add(key);
             start();

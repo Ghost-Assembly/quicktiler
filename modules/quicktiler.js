@@ -219,10 +219,10 @@ export class QuickTiler {
      *
      * Idempotent, because the tile can be clicked twice faster than anyone can
      * think about it. The guard is a flag rather than `this._bindings.length`:
-     * only accelerators Mutter accepted are recorded there, so a user who has
-     * given every action a colliding shortcut would leave it empty while the
-     * bindings are conceptually registered, and a length check would re-run the
-     * whole loop and re-warn on every unpause.
+     * only keys Mutter accepted are recorded there, so if every name were
+     * refused it would stay empty while the bindings are conceptually
+     * registered, and a length check would re-run the whole loop and re-warn
+     * on every unpause.
      */
     bindKeys() {
         if (this._bound) return;
@@ -230,9 +230,13 @@ export class QuickTiler {
 
         const bind = (key, handler) => {
             // addKeybinding returns NONE when registration fails, which happens
-            // when two actions have been given the same accelerator. Recording a
-            // key that was never registered makes disable() call
-            // removeKeybinding on it, and the Shell warns.
+            // when a keybinding of the same *name* is already registered —
+            // another extension that also calls one 'focus-left', say. It is
+            // not how a shared accelerator shows up: two names given the same
+            // combination both register, and Mutter indexes one over the other
+            // with a warning of its own. Recording a key that was never
+            // registered makes disable() call removeKeybinding on it, and the
+            // Shell warns.
             const action = Main.wm.addKeybinding(
                 key,
                 this._settings,
@@ -244,7 +248,7 @@ export class QuickTiler {
 
             if (action === Meta.KeyBindingAction.NONE) {
                 console.warn(
-                    `[quicktiler] could not bind ${key}; is it already in use?`,
+                    `[quicktiler] could not bind ${key}; is a keybinding with that name already registered?`,
                 );
                 return;
             }

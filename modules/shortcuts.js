@@ -1,10 +1,12 @@
 // The rules for assigning accelerators to actions.
 //
 // Imports nothing from gi:// — the Gdk and Gtk values these rules need are
-// passed in by prefs.js. That keeps the decisions testable on plain Node and
-// leaves prefs.js holding only widget construction, which is the part no unit
-// test can say anything useful about.
+// passed in by prefs.js, and the two modules it does import import nothing
+// themselves. That keeps the decisions testable on plain Node and leaves
+// prefs.js holding only widget construction, which is the part no unit test
+// can say anything useful about.
 
+import { canonicalAccelerator } from './accelerator.js';
 import { ACTION_KEYS } from './actions.js';
 
 /** Close the capture dialog, changing nothing. */
@@ -59,9 +61,16 @@ export function captureOutcome(keyval, mask, gtk) {
 /**
  * Which other actions already hold an accelerator.
  *
- * Two actions given the same accelerator do not both work: Mutter registers the
- * first and refuses the second, so the shortcut shows as set in the preferences
- * window and does nothing. Checking before writing is what stops that.
+ * Two actions given the same accelerator do not both work. Mutter registers
+ * both — addKeybinding only refuses a keybinding *name* that is already
+ * registered — and when it indexes the combination one binding overwrites the
+ * other with a warning in the journal, so one of the two does nothing while
+ * the preferences window shows both as set. Checking before
+ * writing is what stops that.
+ *
+ * Compared in canonical form: the gschema and Gtk write modifiers in different
+ * orders, and a string comparison would miss exactly the conflict that a
+ * rebinding over a default creates.
  *
  * @param {string} key Schema key of the action being assigned.
  * @param {string} accelerator Accelerator being assigned.
@@ -70,9 +79,12 @@ export function captureOutcome(keyval, mask, gtk) {
  * @returns {string[]} Keys of the actions already holding it, excluding `key`.
  */
 export function conflictingActions(key, accelerator, bindingsFor) {
-    if (!accelerator) return [];
+    const wanted = canonicalAccelerator(accelerator);
+    if (!wanted) return [];
 
     return ACTION_KEYS.filter(
-        other => other !== key && bindingsFor(other).includes(accelerator),
+        other =>
+            other !== key &&
+            bindingsFor(other).some(held => canonicalAccelerator(held) === wanted),
     );
 }

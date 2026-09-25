@@ -4,6 +4,7 @@ import {
     MODIFIER_ORDER,
     acceleratorLabel,
     bindingLabel,
+    canonicalAccelerator,
     parseAccelerator,
 } from '../modules/accelerator.js';
 import { ACTION_KEYS } from '../modules/actions.js';
@@ -112,9 +113,45 @@ describe('parseAccelerator', () => {
     });
 });
 
+describe('canonicalAccelerator', () => {
+    it('spells the gschema order and the Gtk order identically', () => {
+        expect(canonicalAccelerator('<Super><Control>Left')).toBe(
+            canonicalAccelerator('<Control><Super>Left'),
+        );
+    });
+
+    it('folds modifier aliases and key case', () => {
+        expect(canonicalAccelerator('<Primary><Mod4>LEFT')).toBe(
+            canonicalAccelerator('<Super><Control>left'),
+        );
+    });
+
+    it('ignores the written order of modifiers it does not know', () => {
+        expect(canonicalAccelerator('<Foo><Bar>x')).toBe(
+            canonicalAccelerator('<Bar><Foo>x'),
+        );
+    });
+
+    it('keeps different modifiers apart', () => {
+        expect(canonicalAccelerator('<Super>j')).not.toBe(
+            canonicalAccelerator('<Super><Shift>j'),
+        );
+    });
+
+    it('is empty for an accelerator that names no key', () => {
+        expect(canonicalAccelerator('<Super>')).toBe('');
+        expect(canonicalAccelerator('')).toBe('');
+    });
+});
+
 describe('bindingLabel', () => {
-    it('reads the first accelerator, which is the one Mutter binds', () => {
-        expect(bindingLabel(['<Super>Left', '<Super>Right'])).toBe('Super+←');
+    // Mutter binds every entry in the array, not just the first.
+    it('shows every accelerator the action holds', () => {
+        expect(bindingLabel(['<Super>Left', '<Super>Right'])).toBe('Super+←, Super+→');
+    });
+
+    it('skips an empty entry among real ones', () => {
+        expect(bindingLabel(['', '<Super>Left'])).toBe('Super+←');
     });
 
     it.each([

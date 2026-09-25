@@ -180,9 +180,33 @@ export function acceleratorLabel(accelerator) {
 }
 
 /**
+ * One spelling of an accelerator, for telling whether two name the same keys.
+ *
+ * The gschema writes `<Super><Control>Left`; prefs.js writes a rebound
+ * shortcut with Gtk.accelerator_name_with_keycode, which emits
+ * `<Control><Super>Left`. Mutter binds both to the same key combination, so a
+ * string comparison between them says "different" about the one case where the
+ * answer matters. parseAccelerator already folds aliases and case, and orders
+ * the known modifiers; the unknown ones are sorted here too, so their written
+ * order cannot matter either.
+ *
+ * @param {string} accelerator Accelerator in gschema form.
+ * @returns {string} Canonical form, or '' if it names no key.
+ */
+export function canonicalAccelerator(accelerator) {
+    const { modifiers, key } = parseAccelerator(accelerator);
+    if (!key) return '';
+
+    return [...[...modifiers].sort(), key].join('+');
+}
+
+/**
  * The accelerator a keybinding holds, as GSettings actually stores it.
  *
- * Keybinding keys are `as`, and Mutter uses the first entry. A key that has
+ * Keybinding keys are `as`, and Mutter binds every entry. The preferences
+ * window only ever writes one, and its Gtk.ShortcutLabel shows one, so this
+ * picks the first; a second entry can only come from editing dconf directly,
+ * and the quick settings menu shows those through bindingLabel. A key that has
  * never been set, or that the preferences window cleared, is an empty array.
  *
  * Exported because prefs.js needs the raw accelerator rather than the rendered
@@ -199,9 +223,14 @@ export function acceleratorOf(bindings) {
 /**
  * The display text for a keybinding as GSettings actually stores it.
  *
+ * Every entry, because Mutter binds every entry: a menu that showed only the
+ * first would hide a shortcut that works.
+ *
  * @param {string[]} bindings Accelerators for one action.
  * @returns {string} Display text, or '' if the action is unbound.
  */
 export function bindingLabel(bindings) {
-    return acceleratorLabel(acceleratorOf(bindings));
+    if (!Array.isArray(bindings)) return '';
+
+    return bindings.map(acceleratorLabel).filter(Boolean).join(', ');
 }
