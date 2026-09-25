@@ -157,6 +157,62 @@ describe('matchZone', () => {
     });
 });
 
+// Mutter enlarges a window to its minimum size and keeps the origin it was
+// given, so a window too big for a zone ends up anchored where that zone is but
+// larger than it. An exact match can never find such a window, and cycling then
+// restarted at the head of the cycle on every press: center-half to center-top,
+// enlarged, back to center-half, forever.
+describe('matchZone for a window enlarged to its minimum size', () => {
+    const FHD = { x: 0, y: 0, width: 1920, height: 1080 };
+    const GAP = 8;
+
+    /** A zone's projection, grown to at least a minimum size. */
+    const clamped = (id, minWidth, minHeight) => {
+        const rect = project(id, FHD, GAP);
+        return {
+            ...rect,
+            width: Math.max(rect.width, minWidth),
+            height: Math.max(rect.height, minHeight),
+        };
+    };
+
+    it('recognizes center-top grown taller than a third', () => {
+        expect(matchZone(clamped('center-top', 0, 500), FHD, GAP)).toBe('center-top');
+    });
+
+    it('recognizes left-quarter grown wider than a quarter', () => {
+        expect(matchZone(clamped('left-quarter', 600, 0), FHD, GAP)).toBe(
+            'left-quarter',
+        );
+    });
+
+    it('recognizes a zone that does not start at the work area origin', () => {
+        expect(matchZone(clamped('center-bottom', 0, 900), FHD, GAP)).toBe(
+            'center-bottom',
+        );
+    });
+
+    // center-top and center-half share an origin. A window at least as tall as
+    // center-half fits both descriptions; the smaller zone is the one that
+    // must have been enlarged, and choosing it is what lets the center cycle
+    // move on to center-bottom instead of re-placing the same frame forever.
+    it('prefers the smallest zone when the frame covers several at one anchor', () => {
+        expect(matchZone(clamped('center-top', 0, 1100), FHD, GAP)).toBe('center-top');
+    });
+
+    it('does not claim a window smaller than the zone at its anchor', () => {
+        const rect = project('center-half', FHD, GAP);
+
+        expect(matchZone({ ...rect, height: 200 }, FHD, GAP)).toBeNull();
+    });
+
+    it('does not claim a large window at no zone anchor', () => {
+        expect(
+            matchZone({ x: 300, y: 200, width: 1500, height: 900 }, FHD, GAP),
+        ).toBeNull();
+    });
+});
+
 describe('nextZone', () => {
     it.each([
         ['left', ['left-quarter', 'left-half']],

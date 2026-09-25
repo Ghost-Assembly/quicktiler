@@ -322,6 +322,11 @@ export class QuickTiler {
     /**
      * Which zone a window currently occupies, read back from its geometry.
      *
+     * A maximized window is in none. Its frame is the work area, and as the
+     * largest frame anchored at the work area's corner, matchZone's anchor
+     * match — meant for windows enlarged to their minimum size — would read
+     * it as enlarged from left-quarter.
+     *
      * @param {Meta.Window} window Window to inspect.
      * @param {{x: number, y: number, width: number, height: number}} workArea
      *   Work area to measure against, passed in so that a caller which also
@@ -329,6 +334,8 @@ export class QuickTiler {
      * @returns {string|null} Zone id, or null if it is in none.
      */
     _currentZone(window, workArea) {
+        if (window.is_maximized()) return null;
+
         return matchZone(window.get_frame_rect(), workArea, this._gap);
     }
 

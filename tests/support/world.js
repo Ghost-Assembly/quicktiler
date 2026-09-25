@@ -12,6 +12,11 @@
 // get_frame_rect() straight after unmaximize() still answers the maximized
 // frame. The maximized flags themselves change at once, as window->config does.
 // commit() stands in for the client catching up.
+//
+// `minSize` is opt-in too: Mutter enlarges a frame to the client's minimum size
+// and keeps the origin it was asked for (constrain_size_limits, with the
+// north-west gravity move_resize_frame uses), so a zone smaller than that
+// minimum is never the size it was projected to.
 
 import Meta from 'gi://Meta';
 
@@ -39,6 +44,7 @@ export class FakeWindow {
         canMove = true,
         canResize = true,
         deferred = false,
+        minSize = { width: 0, height: 0 },
     } = {}) {
         this._rect = { ...rect };
         this._monitor = monitor;
@@ -50,6 +56,7 @@ export class FakeWindow {
         this._canMove = canMove;
         this._canResize = canResize;
         this._deferred = deferred;
+        this._minSize = { ...minSize };
         /** The frame the client last committed, while a request is pending. */
         this._committed = null;
 
@@ -160,7 +167,12 @@ export class FakeWindow {
     move_resize_frame(userOp, x, y, width, height) {
         this._request();
         this.moves.push({ userOp, x, y, width, height });
-        this._rect = { x, y, width, height };
+        this._rect = {
+            x,
+            y,
+            width: Math.max(width, this._minSize.width),
+            height: Math.max(height, this._minSize.height),
+        };
     }
 
     maximize() {

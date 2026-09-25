@@ -328,6 +328,53 @@ describe('QuickTiler', () => {
             expect(window.get_frame_rect()).toEqual(zone('left-quarter'));
         });
 
+        // Mutter enlarges a frame to the client's minimum size, keeping the
+        // origin. center-top is about 350 pixels tall here, so a window with a
+        // taller minimum never matched it exactly, read as untiled, and went
+        // back to the head of the cycle on every press.
+        it('walks the center cycle for a window taller than a third', () => {
+            start();
+            const window = focusOne({ minSize: { width: 0, height: 500 } });
+            const origins = [];
+
+            for (let press = 0; press < 4; press += 1) {
+                Main.press('tile-center');
+                const { x, y } = window.get_frame_rect();
+                origins.push({ x, y });
+            }
+
+            const at = id => ({ x: zone(id).x, y: zone(id).y });
+            expect(origins).toEqual([
+                at('center-half'),
+                at('center-top'),
+                at('center-bottom'),
+                at('center-half'),
+            ]);
+            expect(window.get_frame_rect().height).toBe(zone('center-half').height);
+            expect(window.moves.at(-2).height).toBe(zone('center-bottom').height);
+        });
+
+        it('walks the left cycle for a window wider than a quarter', () => {
+            start();
+            const window = focusOne({ minSize: { width: 600, height: 0 } });
+
+            Main.press('tile-left');
+            expect(window.get_frame_rect().width).toBe(600);
+            Main.press('tile-left');
+            expect(window.get_frame_rect()).toEqual(zone('left-half'));
+            Main.press('tile-left');
+            expect(window.moves.at(-1)).toMatchObject(zone('left-quarter'));
+        });
+
+        it('treats a maximized window as in no zone, whatever its frame', () => {
+            start();
+            const window = focusOne({ maximized: true });
+
+            Main.press('tile-left');
+
+            expect(window.get_frame_rect()).toEqual(zone('left-quarter'));
+        });
+
         it('unmaximizes before placing, so the frame resize takes effect', () => {
             start();
             const window = focusOne({ maximized: true });
