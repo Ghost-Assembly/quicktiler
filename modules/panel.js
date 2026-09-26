@@ -28,7 +28,8 @@ import { KEYS, SettingsWatcher } from './settings.js';
 
 /**
  * The name shown on the tile and in its menu header. Untranslated here, like
- * the labels in modules/actions.js, and passed through _() where it is shown.
+ * the labels in modules/actions.js, and passed through each Panel's own
+ * instance gettext (see options.gettext below) where it is shown.
  */
 const TITLE = 'QuickTiler';
 
