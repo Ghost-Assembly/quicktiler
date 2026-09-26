@@ -106,7 +106,7 @@ export function projectZone(zone, workArea, gap = 0) {
  *
  * @type {number}
  */
-export const MATCH_TOLERANCE = 8;
+const MATCH_TOLERANCE = 8;
 
 /**
  * Identify which zone a window currently occupies.
