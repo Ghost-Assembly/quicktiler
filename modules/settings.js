@@ -37,7 +37,7 @@ export const SETTINGS = Object.freeze([
  *
  * @type {ReadonlyArray<string>}
  */
-export const SETTING_KEYS = Object.freeze(SETTINGS.map(setting => setting.key));
+export const ALL_KEYS = Object.freeze(SETTINGS.map(setting => setting.key));
 
 /**
  * A group of settings handlers that are released together.
