@@ -1,13 +1,20 @@
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
+# This file is shared, byte for byte, by every Ghost Assembly GNOME Shell
+# extension (see template.list). Recipes only this project needs live in
+# project.just, imported at the end.
+
 # Derived, so metadata.json is the only place the uuid is written down. Read
 # with just's own functions rather than jq: every variable is evaluated before
 # any recipe runs, so a jq here would stop `just setup` from ever getting as far
 # as saying that jq is missing. The scripts still need jq, and setup checks it.
 _uuid := replace_regex(read("metadata.json"), '(?s)^.*?"uuid"\s*:\s*"([^"]+)".*$', '$1')
 uuid := if _uuid =~ '^[A-Za-z0-9._@-]+$' { _uuid } else { error("no uuid in metadata.json") }
+name := replace_regex(uuid, '@.*$', '')
 install_dir := env_var('HOME') / ".local/share/gnome-shell/extensions" / uuid
-src := "metadata.json extension.js prefs.js modules schemas icons"
+
+# stylesheet.css ships only in the projects that have one.
+src := "metadata.json extension.js prefs.js modules schemas icons" + if path_exists("stylesheet.css") == "true" { " stylesheet.css" } else { "" }
 
 # List available recipes
 default:
@@ -34,11 +41,15 @@ fmt:
     npx eslint --fix .
 
 # Static analysis; changes nothing
-lint:
+lint: template-check
     npx eslint .
     npx prettier --check .
     glib-compile-schemas --strict --dry-run schemas
     shellcheck scripts/*.sh
+
+# Check the files shared across the extensions against template.sha256; --write regenerates it
+template-check *args:
+    ./scripts/template-check.sh {{ args }}
 
 # Run the unit suite
 test *args:
@@ -52,12 +63,15 @@ test-docs *args:
 coverage:
     npx vitest run --coverage
 
-# Both need a real Shell, so neither runs in CI. Builds first, so pack-check
-# never compares a stale zip.
-# Smoke-test in a headless gnome-shell and check the bundle layout
+# None of it runs in CI: it needs a real Shell, and whatever live-extra in
+# project.just probes. Builds first, so pack-check never compares a stale zip.
+# Smoke-test in a headless gnome-shell, check the bundle, run any live-extra
 test-live: build
     ./scripts/headless-check.sh
     ./scripts/pack-check.sh
+    @if {{ just_executable() }} --justfile {{ justfile() }} --summary | tr ' ' '\n' | grep -qx live-extra; then \
+        {{ just_executable() }} --justfile {{ justfile() }} live-extra; \
+    fi
 
 # Compare the built zip against what gnome-extensions pack produces
 pack-check: build
@@ -110,7 +124,7 @@ prefs:
 
 # Follow the extension's log output
 logs:
-    journalctl -f -o cat /usr/bin/gnome-shell | grep -i --line-buffered "quicktiler"
+    journalctl -f -o cat /usr/bin/gnome-shell | grep -i --line-buffered "{{ name }}"
 
 # Remove build output
 [confirm("remove node_modules, coverage, test output, the zip and compiled schemas?")]
@@ -120,3 +134,5 @@ clean:
 
 # Everything CI runs, in order
 ci: lint test test-docs security build
+
+import? 'project.just'

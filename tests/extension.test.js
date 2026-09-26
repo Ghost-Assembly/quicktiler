@@ -99,7 +99,7 @@ describe('QuickTilerExtension', () => {
         extension.enable();
 
         expect(toggle().gicon.name).toBe(
-            '/nonexistent/quicktiler/icons/quicktiler-symbolic.svg',
+            '/nonexistent/extension/icons/quicktiler-symbolic.svg',
         );
     });
 
