@@ -459,6 +459,31 @@ describe('Panel', () => {
         });
     });
 
+    describe('gettext', () => {
+        // modules/panel.js used to keep the translation function in a
+        // module-level `let _`, shared by every Panel and QuickTilerToggle
+        // instance. Constructing a second Panel with a different gettext
+        // silently changed what an already-built tile's still-unopened menu
+        // would show.
+        it("does not leak another panel's translation function into an already-built tile", () => {
+            world = createWorld();
+            panel = new Panel({ settings, iconPath: ICON });
+            panel.enable();
+            const tile = Main.externalIndicators.at(-1).indicator.quickSettingsItems[0];
+
+            const other = new Panel({
+                settings: createSettings({ ...BOUND }),
+                iconPath: ICON,
+                gettext: message => `X:${message}`,
+            });
+            other.enable();
+
+            tile.menu.open();
+
+            expect(tile.menu.items[0].text).toBe(GROUPS[0].label);
+        });
+    });
+
     describe('teardown', () => {
         it('leaves no actor handler connected', () => {
             start();
