@@ -3,7 +3,7 @@
 
 export default {
     title: 'QuickTiler',
-    site: 'https://ghost-assembly.github.io/quicktiler/',
+    site: 'https://ghost-assembly.com/quicktiler/',
     repo: 'https://github.com/Ghost-Assembly/quicktiler',
 
     // [id, heading], in page order. The contents list must match.
@@ -11,9 +11,9 @@ export default {
         ['overview', 'Overview'],
         ['install', 'Install'],
         ['zones', 'Zones'],
-        ['shortcuts', 'Shortcuts'],
-        ['quick-settings', 'Quick settings'],
+        ['quick-settings', 'Quick Settings'],
         ['preferences', 'Preferences'],
+        ['shortcuts', 'Shortcuts'],
         ['architecture', 'Architecture'],
         ['testing', 'Testing'],
         ['packaging', 'Packaging'],
