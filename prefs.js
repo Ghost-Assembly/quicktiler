@@ -173,7 +173,7 @@ export default class QuickTilerPreferences extends ExtensionPreferences {
 
         // First, because it is the switch that decides whether the tile the
         // extension is named for exists at all.
-        const panel = new Adw.PreferencesGroup({ title: _('Quick settings') });
+        const panel = new Adw.PreferencesGroup({ title: _('Quick Settings') });
         const tile = new Adw.SwitchRow({
             title: _('Show the tile'),
             subtitle: _('Lists every action, with its shortcut, in the system menu'),

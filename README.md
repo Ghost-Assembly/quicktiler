@@ -1,19 +1,19 @@
 # QuickTiler
 
-Keyboard-driven zone tiling for GNOME Shell.
+Keyboard-driven zone tiling with a Quick Settings tile, no overlay and no timers.
 
 Press a direction repeatedly and the focused window cycles through the zones on
 that side. There is no overlay and no grid picker, and the extension runs no
 timers.
 
-There is a quick settings tile, listing every action with the shortcut it
+There is a Quick Settings tile, listing every action with the shortcut it
 currently holds — so the panel teaches the keyboard rather than replacing it.
 While it is shown, the extension watches one global signal, the display's
 focus-window change, so a menu row knows which window to act on even while the
 open menu has taken focus. Turn the tile off and the extension holds no actors
 and connects to no global signals at all.
 
-**[Documentation →](https://ghost-assembly.github.io/quicktiler/)** — zones, architecture,
+**[Documentation →](https://ghost-assembly.com/quicktiler/)** — zones, architecture,
 testing, packaging and releasing.
 
 ## Zones
@@ -51,7 +51,7 @@ and there is no state to go stale.
 moves _focus_ without touching anything. Both focus and swap cross monitors.
 Change any of them, and the gap between windows, in the preferences window.
 
-## Quick settings
+## Quick Settings
 
 The tile sits in the system menu, under the same panel as the volume and
 network controls.
@@ -75,22 +75,22 @@ tile because it has to be — with the tile hidden, it is the only way back.
 Needs GNOME Shell 49 or 50. From the latest release, with no clone and no
 toolchain — `gnome-extensions` ships with GNOME Shell itself:
 
-```
-curl -LO 'https://github.com/Ghost-Assembly/quicktiler/releases/latest/download/quicktiler@napalm255.github.io.shell-extension.zip'
-gnome-extensions install --force 'quicktiler@napalm255.github.io.shell-extension.zip'
+```bash
+curl -LO https://github.com/Ghost-Assembly/quicktiler/releases/latest/download/quicktiler@napalm255.github.io.shell-extension.zip
+gnome-extensions install --force quicktiler@napalm255.github.io.shell-extension.zip
 ```
 
 That unpacks the extension and compiles its settings schema, so there is no
 separate `glib-compile-schemas` step. Log out and back in — Wayland cannot
 reload the Shell in place — then turn it on:
 
-```
+```bash
 gnome-extensions enable quicktiler@napalm255.github.io
 ```
 
 From a clone:
 
-```
+```bash
 just setup
 just install
 just enable
@@ -107,16 +107,16 @@ uuid. GNOME identifies an extension by that uuid, so 0.2.0 installs alongside
 the old one rather than replacing it, and both try to claim the same shortcuts —
 only one of them can. Remove the old one first:
 
-```
+```bash
 gnome-extensions uninstall tiler@napalm255.github.io
 ```
 
 The gap and shortcut settings do not carry over; they live under the old
 schema path and are set again in the preferences window.
 
-## Develop
+## Development
 
-```
+```bash
 just            # list every recipe
 just test       # unit suite, runs on Node in about a fifth of a second
 just test-docs  # the docs site in Chromium and Firefox
@@ -126,21 +126,23 @@ just test-live  # headless Shell smoke test, then the packer check
 just docs       # serve the documentation site locally
 ```
 
-`modules/zones.js`, `windows.js`, `neighbors.js`, `actions.js`,
+`extension.js` is the entry point: it is deliberately thin, owning a settings
+object, a `QuickTiler` and a `Panel`, and pairing each construction with its
+teardown. `modules/zones.js`, `windows.js`, `neighbors.js`, `actions.js`,
 `shortcuts.js`, `accelerator.js` and `settings.js` import nothing at all, so
 Vitest runs them on plain Node. `modules/quicktiler.js` is the only file that
 touches Meta or Shell, and `modules/panel.js` the only one that touches St,
 Clutter, PopupMenu or QuickSettings; both are unit-tested through stubs aliased
 in `vitest.config.js`. The
-[architecture](https://ghost-assembly.github.io/quicktiler/#architecture) and
-[testing](https://ghost-assembly.github.io/quicktiler/#testing) sections of the
+[architecture](https://ghost-assembly.com/quicktiler/#architecture) and
+[testing](https://ghost-assembly.com/quicktiler/#testing) sections of the
 documentation go into why.
 
 ## Releasing
 
 Set the version in `metadata.json` and `package.json`, commit, then tag and
 push. CI checks the tag against both files before it builds anything. See
-[releasing](https://ghost-assembly.github.io/quicktiler/#releasing).
+[releasing](https://ghost-assembly.com/quicktiler/#releasing).
 
 ## License
 

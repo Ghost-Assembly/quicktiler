@@ -15,14 +15,14 @@
       <description>
         Whether QuickTiler registers its keybindings with Mutter. Turning this
         off releases every one of them, so the accelerators go back to whatever
-        else claims them. The quick settings menu keeps working, because the
+        else claims them. The Quick Settings menu keeps working, because the
         pause is about the keyboard and nothing else.
       </description>
     </key>
 
     <key type="b" name="show-quick-settings">
       <default>true</default>
-      <summary>Show the quick settings tile</summary>
+      <summary>Show the Quick Settings tile</summary>
       <description>
         Add a QuickTiler tile to the system menu, listing every action with the
         shortcut it currently holds. Turning this off builds no actor at all,

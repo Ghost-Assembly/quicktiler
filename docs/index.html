@@ -6,7 +6,7 @@
         <title>QuickTiler · Ghost Assembly</title>
         <meta
             name="description"
-            content="QuickTiler is keyboard-driven zone tiling for GNOME Shell: press a direction repeatedly and the focused window cycles through quarter, half and center zones, with a quick settings tile that lists every shortcut."
+            content="QuickTiler is keyboard-driven zone tiling for GNOME Shell: press a direction repeatedly and the focused window cycles through quarter, half and center zones, with a Quick Settings tile that lists every shortcut."
         />
         <meta name="color-scheme" content="dark light" />
         <meta name="theme-color" content="#03030a" />
@@ -27,15 +27,12 @@
         <meta property="og:title" content="QuickTiler" />
         <meta
             property="og:description"
-            content="Keyboard-driven zone tiling for GNOME Shell, with a quick settings tile that lists every shortcut."
+            content="Keyboard-driven zone tiling with a Quick Settings tile, no overlay and no timers."
         />
-        <meta
-            property="og:url"
-            content="https://ghost-assembly.github.io/quicktiler/"
-        />
+        <meta property="og:url" content="https://ghost-assembly.com/quicktiler/" />
         <meta
             property="og:image"
-            content="https://ghost-assembly.github.io/quicktiler/assets/og-image.png"
+            content="https://ghost-assembly.com/quicktiler/assets/og-image.png"
         />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
@@ -93,12 +90,15 @@
                 <div>
                     <p class="eyebrow">GNOME Shell extension</p>
                     <h1 id="title">QuickTiler</h1>
-                    <p class="tagline">Keyboard-driven zone tiling for GNOME Shell.</p>
+                    <p class="tagline">
+                        Keyboard-driven zone tiling with a Quick Settings tile, no
+                        overlay and no timers.
+                    </p>
                     <p class="lede">
                         Press a direction repeatedly and the focused window cycles
                         through the zones on that side — quarters, halves and a center
                         column split into thirds. No overlay, no grid picker, no timers,
-                        and a quick settings tile that lists every shortcut.
+                        and a Quick Settings tile that lists every shortcut.
                     </p>
                     <ul class="chips" aria-label="At a glance">
                         <li class="chip">GNOME Shell 49–50</li>
@@ -135,7 +135,7 @@
                 <figure
                     class="shot"
                     role="img"
-                    aria-label="QuickTiler in GNOME quick settings: the QuickTiler tile is on and reads “Shortcuts active”. Its menu is open, with sections Tile, Focus, Swap and Monitor; Tile is expanded to show Tile left Super+Ctrl+Left, Tile right Super+Ctrl+Right, Tile center Super+Ctrl+Up and Maximize Super+Ctrl+Down, then a Settings row."
+                    aria-label="QuickTiler in GNOME Quick Settings: the QuickTiler tile is on and reads “Shortcuts active”. Its menu is open, with sections Tile, Focus, Swap and Monitor; Tile is expanded to show Tile left Super+Ctrl+Left, Tile right Super+Ctrl+Right, Tile center Super+Ctrl+Up and Maximize Super+Ctrl+Down, then a Settings row."
                 >
                     <div class="gtop">
                         <span class="ws"><i></i><i></i><i></i></span>
@@ -386,15 +386,15 @@
                         <a href="#zones"><span class="n">03</span>Zones</a>
                     </li>
                     <li>
-                        <a href="#shortcuts"><span class="n">04</span>Shortcuts</a>
-                    </li>
-                    <li>
                         <a href="#quick-settings"
-                            ><span class="n">05</span>Quick settings</a
+                            ><span class="n">04</span>Quick Settings</a
                         >
                     </li>
                     <li>
-                        <a href="#preferences"><span class="n">06</span>Preferences</a>
+                        <a href="#preferences"><span class="n">05</span>Preferences</a>
+                    </li>
+                    <li>
+                        <a href="#shortcuts"><span class="n">06</span>Shortcuts</a>
                     </li>
                     <li>
                         <a href="#architecture"
@@ -458,7 +458,7 @@
                         >
                     </li>
                     <li>
-                        <a href="https://ghost-assembly.github.io/">
+                        <a href="https://ghost-assembly.com/">
                             <svg
                                 width="15"
                                 height="15"
@@ -508,17 +508,17 @@
                             <a href="#zones"><span class="n">03</span>Zones</a>
                         </li>
                         <li>
-                            <a href="#shortcuts"><span class="n">04</span>Shortcuts</a>
-                        </li>
-                        <li>
                             <a href="#quick-settings"
-                                ><span class="n">05</span>Quick settings</a
+                                ><span class="n">04</span>Quick Settings</a
                             >
                         </li>
                         <li>
                             <a href="#preferences"
-                                ><span class="n">06</span>Preferences</a
+                                ><span class="n">05</span>Preferences</a
                             >
+                        </li>
+                        <li>
+                            <a href="#shortcuts"><span class="n">06</span>Shortcuts</a>
                         </li>
                         <li>
                             <a href="#architecture"
@@ -649,7 +649,7 @@
                                         rx="2"
                                     /></svg
                             ></span>
-                            <h3>Quick settings tile</h3>
+                            <h3>Quick Settings tile</h3>
                             <p>
                                 Lists every action with the shortcut it holds, so the
                                 panel teaches the keyboard. Click it to pause every
@@ -891,10 +891,144 @@
 
                 <section
                     class="section"
+                    id="quick-settings"
+                    aria-labelledby="quick-settings-title"
+                >
+                    <p class="kicker">04</p>
+                    <h2 id="quick-settings-title">Quick Settings</h2>
+                    <p>
+                        The tile sits in the system menu, beside the volume and network
+                        controls. It is a <code>QuickMenuToggle</code> in a
+                        <code>SystemIndicator</code>, added through
+                        <code>addExternalIndicator()</code> so the Shell places it.
+                        There is no top bar icon: one that never changes is noise, and
+                        there is no status to report between keypresses.
+                    </p>
+                    <ul class="bullets">
+                        <li>
+                            <span
+                                ><strong>Click the tile</strong> to pause the shortcuts.
+                                Every accelerator is released to whatever else claims
+                                it; click again to take them back. The subtitle says
+                                which state it is in.</span
+                            >
+                        </li>
+                        <li>
+                            <span
+                                ><strong>Click the arrow</strong> for the menu: the four
+                                groups — tile, focus, swap and monitor — each row
+                                showing the shortcuts it currently holds, then
+                                Settings.</span
+                            >
+                        </li>
+                        <li>
+                            <span
+                                ><strong>Click a row</strong> to perform it. Rows work
+                                while the shortcuts are paused; the pause is about the
+                                keyboard only.</span
+                            >
+                        </li>
+                    </ul>
+                    <div class="note">
+                        <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                        >
+                            <circle cx="12" cy="12" r="9" />
+                            <path d="M12 11v5" />
+                            <path d="M12 7.5h.01" />
+                        </svg>
+                        <p>
+                            <strong>Why a row does not read the focused window.</strong>
+                            Opening the menu takes a Clutter grab, and Mutter’s focus
+                            window can be null while it is held. So the tile remembers
+                            the last window it saw focused — that is the one global
+                            signal it watches — and a row acts on that one, through the
+                            same checks as a keypress.
+                        </p>
+                    </div>
+                </section>
+
+                <section
+                    class="section"
+                    id="preferences"
+                    aria-labelledby="preferences-title"
+                >
+                    <p class="kicker">05</p>
+                    <h2 id="preferences-title">Preferences</h2>
+                    <p>
+                        Open them from the Extensions app, from the tile’s Settings row,
+                        or with <code>just prefs</code> from a clone.
+                    </p>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Setting</th>
+                                <th scope="col">Default</th>
+                                <th scope="col">Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td data-label="Setting">Show the tile</td>
+                                <td data-label="Default">On</td>
+                                <td data-label="Notes" class="muted">
+                                    Off builds no actor and watches no global signal.
+                                </td>
+                            </tr>
+                            <tr>
+                                <td data-label="Setting">Gap</td>
+                                <td data-label="Default">8 pixels</td>
+                                <td data-label="Notes" class="muted">
+                                    0 to 200, between windows and at the screen edge.
+                                </td>
+                            </tr>
+                            <tr>
+                                <td data-label="Setting">Keyboard shortcuts</td>
+                                <td data-label="Default">On</td>
+                                <td data-label="Notes" class="muted">
+                                    The same pause the tile writes. With the tile
+                                    hidden, it is the only way back.
+                                </td>
+                            </tr>
+                            <tr>
+                                <td data-label="Setting">Each action</td>
+                                <td data-label="Default">See Shortcuts</td>
+                                <td data-label="Notes" class="muted">
+                                    Click a row and press the new shortcut. Backspace
+                                    clears it, Escape cancels.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p>
+                        Assigning a shortcut another QuickTiler action already holds
+                        clears it from that action first, whichever order its modifiers
+                        are written in. Leaving both set would not work: Mutter
+                        registers both and indexes the combination to only one, so the
+                        other would show as bound and do nothing.
+                    </p>
+                    <p>
+                        While it waits for a key, the capture dialog asks the Shell to
+                        pass it every key, so a combination that is already bound can
+                        still be recorded. The first time, GNOME asks whether to allow
+                        that.
+                    </p>
+                </section>
+
+                <section
+                    class="section"
                     id="shortcuts"
                     aria-labelledby="shortcuts-title"
                 >
-                    <p class="kicker">04</p>
+                    <p class="kicker">06</p>
                     <h2 id="shortcuts-title">Shortcuts</h2>
                     <p>
                         Every default was checked against the 90 Super accelerators
@@ -1037,140 +1171,6 @@
 
                 <section
                     class="section"
-                    id="quick-settings"
-                    aria-labelledby="quick-settings-title"
-                >
-                    <p class="kicker">05</p>
-                    <h2 id="quick-settings-title">Quick settings</h2>
-                    <p>
-                        The tile sits in the system menu, beside the volume and network
-                        controls. It is a <code>QuickMenuToggle</code> in a
-                        <code>SystemIndicator</code>, added through
-                        <code>addExternalIndicator()</code> so the Shell places it.
-                        There is no top bar icon: one that never changes is noise, and
-                        there is no status to report between keypresses.
-                    </p>
-                    <ul class="bullets">
-                        <li>
-                            <span
-                                ><strong>Click the tile</strong> to pause the shortcuts.
-                                Every accelerator is released to whatever else claims
-                                it; click again to take them back. The subtitle says
-                                which state it is in.</span
-                            >
-                        </li>
-                        <li>
-                            <span
-                                ><strong>Click the arrow</strong> for the menu: the four
-                                groups — tile, focus, swap and monitor — each row
-                                showing the shortcuts it currently holds, then
-                                Settings.</span
-                            >
-                        </li>
-                        <li>
-                            <span
-                                ><strong>Click a row</strong> to perform it. Rows work
-                                while the shortcuts are paused; the pause is about the
-                                keyboard only.</span
-                            >
-                        </li>
-                    </ul>
-                    <div class="note">
-                        <svg
-                            width="20"
-                            height="20"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            aria-hidden="true"
-                        >
-                            <circle cx="12" cy="12" r="9" />
-                            <path d="M12 11v5" />
-                            <path d="M12 7.5h.01" />
-                        </svg>
-                        <p>
-                            <strong>Why a row does not read the focused window.</strong>
-                            Opening the menu takes a Clutter grab, and Mutter’s focus
-                            window can be null while it is held. So the tile remembers
-                            the last window it saw focused — that is the one global
-                            signal it watches — and a row acts on that one, through the
-                            same checks as a keypress.
-                        </p>
-                    </div>
-                </section>
-
-                <section
-                    class="section"
-                    id="preferences"
-                    aria-labelledby="preferences-title"
-                >
-                    <p class="kicker">06</p>
-                    <h2 id="preferences-title">Preferences</h2>
-                    <p>
-                        Open them from the Extensions app, from the tile’s Settings row,
-                        or with <code>just prefs</code> from a clone.
-                    </p>
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th scope="col">Setting</th>
-                                <th scope="col">Default</th>
-                                <th scope="col">Notes</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td data-label="Setting">Show the tile</td>
-                                <td data-label="Default">On</td>
-                                <td data-label="Notes" class="muted">
-                                    Off builds no actor and watches no global signal.
-                                </td>
-                            </tr>
-                            <tr>
-                                <td data-label="Setting">Gap</td>
-                                <td data-label="Default">8 pixels</td>
-                                <td data-label="Notes" class="muted">
-                                    0 to 200, between windows and at the screen edge.
-                                </td>
-                            </tr>
-                            <tr>
-                                <td data-label="Setting">Keyboard shortcuts</td>
-                                <td data-label="Default">On</td>
-                                <td data-label="Notes" class="muted">
-                                    The same pause the tile writes. With the tile
-                                    hidden, it is the only way back.
-                                </td>
-                            </tr>
-                            <tr>
-                                <td data-label="Setting">Each action</td>
-                                <td data-label="Default">See Shortcuts</td>
-                                <td data-label="Notes" class="muted">
-                                    Click a row and press the new shortcut. Backspace
-                                    clears it, Escape cancels.
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    <p>
-                        Assigning a shortcut another QuickTiler action already holds
-                        clears it from that action first, whichever order its modifiers
-                        are written in. Leaving both set would not work: Mutter
-                        registers both and indexes the combination to only one, so the
-                        other would show as bound and do nothing.
-                    </p>
-                    <p>
-                        While it waits for a key, the capture dialog asks the Shell to
-                        pass it every key, so a combination that is already bound can
-                        still be recorded. The first time, GNOME asks whether to allow
-                        that.
-                    </p>
-                </section>
-
-                <section
-                    class="section"
                     id="architecture"
                     aria-labelledby="architecture-title"
                 >
@@ -1183,10 +1183,18 @@
                         and the three files that touch a toolkit only read facts off it
                         and act on the answer.
                     </p>
+                    <p>
+                        <code>extension.js</code> is the entry point GNOME Shell loads.
+                        It is deliberately thin: it owns a settings object, a
+                        <code>QuickTiler</code> and a <code>Panel</code>, and its only
+                        real job is pairing each construction with a teardown, so
+                        <code>disable()</code> is exactly <code>enable()</code> in
+                        reverse.
+                    </p>
                     <div
                         class="diagram"
                         role="img"
-                        aria-label="Mutter and the Shell deliver keypresses and window geometry to modules/quicktiler.js, which asks the pure modules — zones.js, windows.js and neighbors.js — where the window goes; modules/panel.js runs the same actions from the quick settings menu."
+                        aria-label="Mutter and the Shell deliver keypresses and window geometry to modules/quicktiler.js, which asks the pure modules — zones.js, windows.js and neighbors.js — where the window goes; modules/panel.js runs the same actions from the Quick Settings menu. extension.js wires quicktiler.js and panel.js together and tears both down."
                     >
                         <div class="node">
                             <b>Mutter &amp; Shell</b
@@ -1360,7 +1368,7 @@
                         <li>
                             <span
                                 >Signal handlers tracked per emitter, as gnome-shell
-                                tracks them, and a quick settings menu the Shell never
+                                tracks them, and a Quick Settings menu the Shell never
                                 destroys — so a leak shows up as a failing test.</span
                             >
                         </li>
@@ -1439,8 +1447,8 @@
                         </header>
                         <pre
                             tabindex="0"
-                        ><span class="p">$ </span><span class="k">git</span> tag -a v0.2.2 -m 'release v0.2.2'
-<span class="p">$ </span><span class="k">git</span> push origin v0.2.2</pre>
+                        ><span class="p">$ </span><span class="k">git</span> tag -a v0.2.3 -m 'release v0.2.3'
+<span class="p">$ </span><span class="k">git</span> push origin v0.2.3</pre>
                     </div>
                     <p>
                         The release workflow checks the tag against both files and stops
@@ -1511,7 +1519,7 @@
             <nav aria-label="Footer">
                 <ul>
                     <li>
-                        <a href="https://ghost-assembly.github.io/">All projects</a>
+                        <a href="https://ghost-assembly.com/">All projects</a>
                     </li>
                     <li>
                         <a href="https://github.com/Ghost-Assembly/quicktiler"

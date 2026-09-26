@@ -10,6 +10,11 @@ import security from 'eslint-plugin-security';
 // no document, no localStorage, no fetch and no DOM. Declaring the browser set
 // tells ESLint those names are defined, so a typo that reaches for one is
 // accepted silently and fails only at runtime inside the Shell.
+//
+// Every name below was checked against the running interpreter with
+// `gjs -c 'print(typeof globalThis.<name>)'` on gjs 1.88.1. Four names that a
+// browser would provide are absent and must stay absent from this list:
+// `fetch`, `structuredClone`, `queueMicrotask` and `AbortController`.
 const gjsGlobals = {
     ARGV: 'readonly',
     imports: 'readonly',
@@ -29,8 +34,6 @@ const gjsGlobals = {
     setInterval: 'readonly',
     clearTimeout: 'readonly',
     clearInterval: 'readonly',
-    queueMicrotask: 'readonly',
-    structuredClone: 'readonly',
     TextEncoder: 'readonly',
     TextDecoder: 'readonly',
 };
@@ -52,9 +55,8 @@ export default [
         },
     },
     {
-        // scripts/pack-check.sh runs this one under plain gjs, outside
-        // gnome-shell: the GJS globals, but no `global`, which the Shell
-        // provides and a standalone gjs does not.
+        // scripts/*.js run under plain gjs, outside gnome-shell, so they get
+        // the GJS globals but not `global`.
         files: ['scripts/*.js'],
         languageOptions: {
             ecmaVersion: 2022,
@@ -69,6 +71,12 @@ export default [
             ecmaVersion: 2022,
             sourceType: 'module',
             globals: globals.node,
+        },
+        rules: {
+            // The stubs mirror real GObject signatures, so they carry
+            // parameters they have no use for. Same convention as the
+            // extension code above.
+            'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
         },
     },
     {

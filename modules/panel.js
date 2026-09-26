@@ -26,14 +26,10 @@ import { bindingLabel } from './accelerator.js';
 import { ACTIONS_BY_GROUP, ACTION_KEYS, GROUPS } from './actions.js';
 import { KEYS, SettingsWatcher } from './settings.js';
 
-// Injected by Panel's constructor rather than imported, so this module loads
-// under Vitest without gnome-shell's resource:// gettext. Assigned before any
-// class below is constructed, because Panel.enable() is what constructs them.
-let _;
-
 /**
  * The name shown on the tile and in its menu header. Untranslated here, like
- * the labels in modules/actions.js, and passed through _() where it is shown.
+ * the labels in modules/actions.js, and passed through each Panel's own
+ * instance gettext (see options.gettext below) where it is shown.
  */
 const TITLE = 'QuickTiler';
 
@@ -51,14 +47,18 @@ const QuickTilerToggle = GObject.registerClass(
          * @param {object} options Injected dependencies.
          * @param {object} options.gicon Icon for the tile and the menu header.
          * @param {Gio.Settings} options.settings The extension's settings.
+         * @param {(message: string) => string} options.gettext Translation
+         *   function. An instance field rather than a module-level binding, so
+         *   one tile's translation cannot leak into another's.
          * @param {(key: string) => void} options.onAction Perform one action.
          * @param {() => void} options.onOpenPreferences Open the preferences window.
          */
-        _init({ gicon, settings, onAction, onOpenPreferences }) {
-            super._init({ title: _(TITLE), gicon, toggleMode: true });
+        _init({ gicon, settings, gettext, onAction, onOpenPreferences }) {
+            super._init({ title: gettext(TITLE), gicon, toggleMode: true });
 
             this._gicon = gicon;
             this._settings = settings;
+            this._gettext = gettext;
             this._onAction = onAction;
             this._onOpenPreferences = onOpenPreferences;
 
@@ -102,7 +102,9 @@ const QuickTilerToggle = GObject.registerClass(
         /** Build the four sections, their rows, and the settings row. */
         _buildMenu() {
             for (const group of GROUPS) {
-                const section = new PopupMenu.PopupSubMenuMenuItem(_(group.label));
+                const section = new PopupMenu.PopupSubMenuMenuItem(
+                    this._gettext(group.label),
+                );
 
                 for (const action of ACTIONS_BY_GROUP.get(group.id))
                     section.menu.addMenuItem(this._actionRow(action));
@@ -112,7 +114,7 @@ const QuickTilerToggle = GObject.registerClass(
 
             this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
-            const preferences = new PopupMenu.PopupMenuItem(_('Settings'));
+            const preferences = new PopupMenu.PopupMenuItem(this._gettext('Settings'));
             preferences.connectObject(
                 'activate',
                 () => this._onOpenPreferences(),
@@ -133,7 +135,7 @@ const QuickTilerToggle = GObject.registerClass(
          * @returns {PopupMenu.PopupMenuItem} The row.
          */
         _actionRow({ key, label }) {
-            const row = new PopupMenu.PopupMenuItem(_(label));
+            const row = new PopupMenu.PopupMenuItem(this._gettext(label));
 
             // So the accelerator sits hard right rather than beside the label.
             row.label.x_expand = true;
@@ -172,14 +174,16 @@ const QuickTilerToggle = GObject.registerClass(
         /** Show the pause state on the tile and in the menu header. */
         sync() {
             const enabled = this._settings.get_boolean(KEYS.SHORTCUTS_ENABLED);
-            const subtitle = enabled ? _('Shortcuts active') : _('Shortcuts paused');
+            const subtitle = enabled
+                ? this._gettext('Shortcuts active')
+                : this._gettext('Shortcuts paused');
 
             // Set from the setting rather than left to toggleMode, which is
             // what makes the tile follow a change made in the preferences
             // window instead of drifting away from it.
             this.checked = enabled;
             this.subtitle = subtitle;
-            this.menu.setHeader(this._gicon, _(TITLE), subtitle);
+            this.menu.setHeader(this._gicon, this._gettext(TITLE), subtitle);
         }
 
         /** Write the pause; modules/quicktiler.js is what reacts to it. */
@@ -225,6 +229,7 @@ export class Panel {
     constructor({ settings, iconPath, gettext, runAction, openPreferences }) {
         this._settings = settings;
         this._iconPath = iconPath;
+        this._gettext = gettext ?? (message => message);
         this._runAction = runAction ?? (() => {});
         this._openPreferences = openPreferences ?? (() => {});
         // Two groups with different lifetimes: the first pair of watches is
@@ -237,8 +242,6 @@ export class Panel {
         this._indicator = null;
         this._lastFocused = null;
         this._lastFocusedUnmanagedId = 0;
-
-        _ = gettext ?? (message => message);
     }
 
     /** Watch the settings, and build the tile unless it is switched off. */
@@ -266,6 +269,7 @@ export class Panel {
         this._toggle = new QuickTilerToggle({
             gicon,
             settings: this._settings,
+            gettext: this._gettext,
             onAction: key => this._runAction(key, this._lastFocused),
             onOpenPreferences: () => this._openPreferences(),
         });

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { ACTION_KEYS } from '../modules/actions.js';
-import { KEYS, SETTINGS, SETTING_KEYS } from '../modules/settings.js';
+import { KEYS, SETTINGS, ALL_KEYS } from '../modules/settings.js';
 import { schemaSettings } from './support/schema.js';
 
 describe('SETTINGS', () => {
@@ -12,7 +12,7 @@ describe('SETTINGS', () => {
     });
 
     it('matches the gschema setting keys exactly', () => {
-        expect([...SETTING_KEYS].sort()).toEqual([...schemaSettings().keys()].sort());
+        expect([...ALL_KEYS].sort()).toEqual([...schemaSettings().keys()].sort());
     });
 
     it('declares the same type the schema does', () => {
@@ -21,18 +21,18 @@ describe('SETTINGS', () => {
     });
 
     it('lists settings in the schema declaration order', () => {
-        expect([...SETTING_KEYS]).toEqual([...schemaSettings().keys()]);
+        expect([...ALL_KEYS]).toEqual([...schemaSettings().keys()]);
     });
 
     // A key that is both an action and a setting would be bound as a shortcut
     // and bound to a switch, and whichever wrote last would win silently.
     it('shares no key with the action list', () => {
         const actions = new Set(ACTION_KEYS);
-        for (const key of SETTING_KEYS) expect(actions).not.toContain(key);
+        for (const key of ALL_KEYS) expect(actions).not.toContain(key);
     });
 
     it('names every key it exports', () => {
-        expect([...Object.values(KEYS)].sort()).toEqual([...SETTING_KEYS].sort());
+        expect([...Object.values(KEYS)].sort()).toEqual([...ALL_KEYS].sort());
     });
 
     it('is frozen, so no caller can reorder or extend it', () => {

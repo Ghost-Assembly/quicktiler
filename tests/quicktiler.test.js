@@ -50,9 +50,9 @@ describe('QuickTiler', () => {
             start();
 
             expect([...Main.registered.keys()].sort()).toEqual([...ACTION_KEYS].sort());
-            for (const call of Main.addCalls) {
-                expect(call.flags).toBe(Meta.KeyBindingFlags.IGNORE_AUTOREPEAT);
-                expect(call.settings).toBe(settings);
+            for (const binding of Main.wm.bindings.values()) {
+                expect(binding.flags).toBe(Meta.KeyBindingFlags.IGNORE_AUTOREPEAT);
+                expect(binding.settings).toBe(settings);
             }
         });
 

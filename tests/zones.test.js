@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import * as zones from '../modules/zones.js';
 import {
     CYCLES,
     ZONES,
@@ -234,5 +235,13 @@ describe('nextZone', () => {
 
     it('exposes a cycle for every group named in the zone table', () => {
         for (const zone of ZONES) expect(CYCLES[zone.group]).toContain(zone.id);
+    });
+});
+
+describe('module surface', () => {
+    // MATCH_TOLERANCE is matchZone's own default; nothing outside this file
+    // needs it, so it stays file-local rather than part of the public API.
+    it('keeps MATCH_TOLERANCE file-local', () => {
+        expect(zones).not.toHaveProperty('MATCH_TOLERANCE');
     });
 });
