@@ -105,7 +105,8 @@ describe('conflictingActions', () => {
 
 describe('isValidBinding', () => {
     const SHIFT = 1;
-    const gtk = { shiftMask: SHIFT, acceleratorValid: () => true };
+    // 0x6a is 'j', which types something on its own.
+    const gtk = { shiftMask: SHIFT, acceleratorValid: () => true, codePoint: 0x6a };
 
     it('rejects a bare key, which would be stolen from every application', () => {
         expect(isValidBinding(0, 0x6a, gtk)).toBe(false);
@@ -113,6 +114,18 @@ describe('isValidBinding', () => {
 
     it('rejects Shift alone, which just types a capital letter', () => {
         expect(isValidBinding(SHIFT, 0x6a, gtk)).toBe(false);
+    });
+
+    // GNOME Settings' own rule: Shift alone is fine when the key types
+    // nothing on its own, the way a function key does.
+    it('accepts Shift+F5, since F5 types nothing on its own', () => {
+        const F5 = 0xffc2;
+        expect(isValidBinding(SHIFT, F5, { ...gtk, codePoint: 0 })).toBe(true);
+    });
+
+    it('rejects Shift+A, which is how a capital A is typed', () => {
+        const A = 0x41;
+        expect(isValidBinding(SHIFT, A, { ...gtk, codePoint: A })).toBe(false);
     });
 
     it('accepts a real modifier combination', () => {
@@ -151,6 +164,9 @@ describe('captureOutcome', () => {
         backspaceKey: BACKSPACE,
         shiftMask: SHIFT,
         acceleratorValid: () => true,
+        // 0x6a is 'j', the key every test below that is not Escape or
+        // Backspace presses.
+        codePoint: 0x6a,
     };
 
     it('cancels on unmodified Escape', () => {
