@@ -89,6 +89,11 @@ const QuickTilerToggle = GObject.registerClass(
                 },
                 this,
             );
+
+            // A plain connect, as ButtonBox does: connectObject with this as
+            // its own owner could be released by the destroy it is meant to
+            // handle.
+            this.connect('destroy', () => this._onDestroy());
         }
 
         /** Build the menu, the first time it is opened. */
@@ -194,23 +199,23 @@ const QuickTilerToggle = GObject.registerClass(
             this._settings.set_boolean(KEYS.SHORTCUTS_ENABLED, this.checked);
         }
 
-        /** Drop every handler this tile owns, and the menu the Shell keeps. */
-        destroy() {
-            // The Shell parents this menu into the quick settings overlay and
-            // never destroys it (Shell 50.3's quickSettings.js has no destroy
-            // call anywhere), so destroying the toggle alone would leave the
-            // menu, its rows, its focus group and PopupMenuBase's sessionMode
-            // handler behind on every disable — and every screen lock is a
-            // disable. Destroying the menu destroys the rows too, which is
-            // what drops the 'activate' handlers connected on them, and the
-            // 'open-state-changed' handler connected on the menu itself: a
-            // disconnectObject(this) on the toggle reaches neither, because
-            // gnome-shell tracks handlers per emitter.
+        // From the destroy signal rather than a destroy() override, which an
+        // actor destroyed from C never calls.
+        //
+        // The Shell parents this menu into the quick settings overlay and
+        // never destroys it (Shell 50.3's quickSettings.js has no destroy
+        // call anywhere), so destroying the toggle alone would leave the
+        // menu, its rows, its focus group and PopupMenuBase's sessionMode
+        // handler behind on every disable — and every screen lock is a
+        // disable. Destroying the menu destroys the rows too, which is
+        // what drops the 'activate' handlers connected on them, and the
+        // 'open-state-changed' handler connected on the menu itself: a
+        // disconnectObject(this) on the toggle reaches neither, because
+        // gnome-shell tracks handlers per emitter.
+        _onDestroy() {
             this.menu.destroy();
             this._accelerators.clear();
             this.disconnectObject(this);
-
-            super.destroy();
         }
     },
 );

@@ -524,6 +524,21 @@ describe('Panel', () => {
             expect(tileMenu._wasDestroyed).toBe(true);
         });
 
+        // Clutter can destroy an actor straight from C, through its own
+        // dispose vfunc, which never calls back into an overridden JS
+        // destroy() method -- only the 'destroy' signal, which every actor
+        // emits either way. A destroy() override is therefore never a
+        // reliable place to release the menu.
+        it('destroys the tile menu when the Shell destroys the toggle directly', () => {
+            start();
+            const tile = toggle();
+            const tileMenu = tile.menu;
+
+            tile.emit('destroy');
+
+            expect(tileMenu._wasDestroyed).toBe(true);
+        });
+
         it('destroys the tile menu when the tile is switched off', () => {
             start();
             const tileMenu = toggle().menu;
