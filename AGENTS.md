@@ -45,13 +45,26 @@ anyone — human or agent — changing it.
   extension by its uuid; changing it orphans every existing install exactly
   the way the Tiler → QuickTiler rename once did (README's "Upgrading from
   Tiler 0.1.0" is the scar tissue from that).
-- The gschema keybinding key names (`tile-left`, `focus-right`, `swap-left`,
-  …) are unprefixed on purpose, for compatibility with settings users already
-  have. Prefixing them — e.g. to `quicktiler-tile-left` — would silently
-  discard every existing user's custom binding on upgrade, because GSettings
-  has no rename. That change is backlogged and needs an explicit migration
-  (read the old key, write the new one, on first run of the new version), not
-  a plain rename.
+- The gschema keybinding key names are prefixed with `quicktiler-`
+  (`quicktiler-tile-left`, `quicktiler-focus-right`, `quicktiler-swap-left`,
+  …), the same way quickts prefixes `quickts-open-menu`: Mutter keeps one
+  table of keybinding names for the whole Shell and refuses a name already
+  claimed by another extension, so an unprefixed `tile-left` is a name a
+  second extension could just as easily pick. GSettings has no rename, so
+  this shipped with no migration: a binding a user had customized under the
+  old, unprefixed key does not carry over, and the action falls back to its
+  default. See README.md's "Upgrading from 0.2.2 or earlier".
+- The gschema also still declares the ten old, unprefixed keys
+  (`tile-left`, `focus-right`, `swap-left`, …), unread by any current code, as
+  deprecated entries with their old defaults. Installing an update replaces
+  the schema at once, but the Shell keeps an already-enabled extension's old
+  code loaded until the next logout or lock/unlock — so a 0.2.x copy still
+  running when the schema is replaced would have its `enable()` ask Mutter
+  for a keybinding key the new schema no longer has, and abort the Shell.
+  Keeping the old keys, unused, is what lets that old code keep running until
+  logout instead. A later release removes this block entirely;
+  `tests/actions.test.js` checks that they are never read into `ACTIONS` in
+  the meantime.
 - Decisions live in the gi-free modules — `zones.js`, `windows.js`,
   `neighbors.js`, `actions.js`, `shortcuts.js`, `accelerator.js`,
   `settings.js` — which import nothing (`gi://` or `resource:///`), so Vitest
@@ -135,10 +148,10 @@ is not a keybinding (`KEYS.GAP`, `KEYS.SHORTCUTS_ENABLED`,
 `KEYS.SHOW_QUICK_SETTINGS`, collected in `ALL_KEYS`). The gschema
 (`schemas/org.gnome.shell.extensions.quicktiler.gschema.xml`) and `prefs.js`
 both follow it — add or rename a key there first, and `tests/settings.test.js`
-checks the gschema agrees. Keybinding key names (`tile-left`, `focus-right`,
-…) are not in `modules/settings.js`; they're named once in `modules/actions.js`
-(`ACTIONS`, `ACTION_KEYS`) and passed to `Main.wm.addKeybinding` by
-`modules/quicktiler.js`, because they need Mutter's `as` accelerator-array
-type rather than the plain booleans and integers `modules/settings.js` and
-`SettingsWatcher` handle. They're the unprefixed names covered under Hard
-constraints above.
+checks the gschema agrees. Keybinding key names (`quicktiler-tile-left`,
+`quicktiler-focus-right`, …) are not in `modules/settings.js`; they're named
+once in `modules/actions.js` (`ACTIONS`, `ACTION_KEYS`) and passed to
+`Main.wm.addKeybinding` by `modules/quicktiler.js`, because they need Mutter's
+`as` accelerator-array type rather than the plain booleans and integers
+`modules/settings.js` and `SettingsWatcher` handle. They're the prefixed names
+covered under Hard constraints above.

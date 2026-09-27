@@ -136,7 +136,7 @@ describe('QuickTilerExtension', () => {
         const window = world.workspace.add(new FakeWindow())[0];
         world.focus(window);
 
-        rowFor('tile-left').activate();
+        rowFor('quicktiler-tile-left').activate();
 
         expect(window.moves).toHaveLength(1);
     });

@@ -13,9 +13,9 @@ const ICON = '/nonexistent/quicktiler/icons/quicktiler-symbolic.svg';
 // A couple of real accelerators, so the rows show something. The full set is
 // checked against the gschema by tests/accelerator.test.js.
 const BOUND = {
-    'tile-left': ['<Super><Control>Left'],
-    'tile-right': ['<Super><Control>Right'],
-    'move-monitor-prev': ['<Super><Control><Shift>m'],
+    'quicktiler-tile-left': ['<Super><Control>Left'],
+    'quicktiler-tile-right': ['<Super><Control>Right'],
+    'quicktiler-move-monitor-prev': ['<Super><Control><Shift>m'],
 };
 
 describe('Panel', () => {
@@ -232,22 +232,22 @@ describe('Panel', () => {
         it('builds its rows once, however often it is reopened', () => {
             start();
             const tile = toggle();
-            const row = rowFor('tile-left');
+            const row = rowFor('quicktiler-tile-left');
 
             tile.menu.close();
             tile.menu.open();
 
             expect(row._wasDestroyed).toBe(false);
-            expect(rowFor('tile-left')).toBe(row);
+            expect(rowFor('quicktiler-tile-left')).toBe(row);
         });
 
         // The build reads every accelerator itself, so a rebinding that
         // happened while there were no rows to retext is not lost.
         it('shows a shortcut rebound before it was ever opened', () => {
             start();
-            settings.emitChange('tile-left', ['<Super>F5']);
+            settings.emitChange('quicktiler-tile-left', ['<Super>F5']);
 
-            expect(acceleratorOn(rowFor('tile-left'))).toBe('Super+F5');
+            expect(acceleratorOn(rowFor('quicktiler-tile-left'))).toBe('Super+F5');
         });
 
         it('lists one section per group, in order', () => {
@@ -284,17 +284,17 @@ describe('Panel', () => {
 
             // Guards the check above: with nothing bound it would pass by
             // comparing every row's empty string against another empty string.
-            expect(acceleratorOn(rowFor('tile-left'))).toBe('Super+Ctrl+←');
-            expect(acceleratorOn(rowFor('move-monitor-prev'))).toBe(
+            expect(acceleratorOn(rowFor('quicktiler-tile-left'))).toBe('Super+Ctrl+←');
+            expect(acceleratorOn(rowFor('quicktiler-move-monitor-prev'))).toBe(
                 'Super+Ctrl+Shift+M',
             );
         });
 
         it('shows nothing for an action that is unbound', () => {
-            settings = createSettings({ ...BOUND, 'tile-left': [] });
+            settings = createSettings({ ...BOUND, 'quicktiler-tile-left': [] });
             start();
 
-            expect(acceleratorOn(rowFor('tile-left'))).toBe('');
+            expect(acceleratorOn(rowFor('quicktiler-tile-left'))).toBe('');
         });
 
         it('separates the settings row from the sections', () => {
@@ -316,47 +316,47 @@ describe('Panel', () => {
     describe('rebinding a shortcut', () => {
         it('retexts the row whose accelerator changed', () => {
             start();
-            settings.emitChange('tile-left', ['<Super>F5']);
+            settings.emitChange('quicktiler-tile-left', ['<Super>F5']);
 
-            expect(acceleratorOn(rowFor('tile-left'))).toBe('Super+F5');
+            expect(acceleratorOn(rowFor('quicktiler-tile-left'))).toBe('Super+F5');
         });
 
         it('leaves every other row alone', () => {
             start();
-            const before = acceleratorOn(rowFor('tile-right'));
+            const before = acceleratorOn(rowFor('quicktiler-tile-right'));
 
-            settings.emitChange('tile-left', ['<Super>F5']);
+            settings.emitChange('quicktiler-tile-left', ['<Super>F5']);
 
-            expect(acceleratorOn(rowFor('tile-right'))).toBe(before);
+            expect(acceleratorOn(rowFor('quicktiler-tile-right'))).toBe(before);
         });
 
         // Rebuilding would destroy a row a click could still be traveling
         // through. Retexting one label cannot.
         it('destroys no rows', () => {
             start();
-            const row = rowFor('tile-left');
+            const row = rowFor('quicktiler-tile-left');
 
-            settings.emitChange('tile-left', ['<Super>F5']);
+            settings.emitChange('quicktiler-tile-left', ['<Super>F5']);
 
             expect(row._wasDestroyed).toBe(false);
-            expect(rowFor('tile-left')).toBe(row);
+            expect(rowFor('quicktiler-tile-left')).toBe(row);
         });
     });
 
     describe('performing an action', () => {
         it('runs the action its row names', () => {
             start();
-            rowFor('tile-right').activate();
+            rowFor('quicktiler-tile-right').activate();
 
             // Nothing was focused in this test, so the target is null and
             // modules/quicktiler.js falls back to reading the display.
-            expect(actions).toEqual([{ key: 'tile-right', target: null }]);
+            expect(actions).toEqual([{ key: 'quicktiler-tile-right', target: null }]);
         });
 
         it('closes the panel, because the result is a window that moved', () => {
             start();
             toggle().menu.open();
-            rowFor('tile-left').activate();
+            rowFor('quicktiler-tile-left').activate();
 
             expect(toggle().menu.isOpen).toBe(false);
         });
@@ -365,7 +365,7 @@ describe('Panel', () => {
         it('runs while shortcuts are paused', () => {
             settings = createSettings({ ...BOUND, [KEYS.SHORTCUTS_ENABLED]: false });
             start();
-            rowFor('tile-left').activate();
+            rowFor('quicktiler-tile-left').activate();
 
             expect(actions).toHaveLength(1);
         });
@@ -377,7 +377,7 @@ describe('Panel', () => {
             const window = world.workspace.add(new FakeWindow())[0];
             world.focus(window);
 
-            rowFor('tile-left').activate();
+            rowFor('quicktiler-tile-left').activate();
 
             expect(actions[0].target).toBe(window);
         });
@@ -395,7 +395,7 @@ describe('Panel', () => {
             world.focus(second);
             world.focus(null);
 
-            rowFor('tile-left').activate();
+            rowFor('quicktiler-tile-left').activate();
 
             expect(actions[0].target).toBe(second);
         });
@@ -410,7 +410,7 @@ describe('Panel', () => {
             world.focus(window);
 
             window.unmanage();
-            rowFor('tile-left').activate();
+            rowFor('quicktiler-tile-left').activate();
 
             expect(actions[0].target).toBeNull();
         });
@@ -453,7 +453,7 @@ describe('Panel', () => {
             panel = new Panel({ settings, iconPath: ICON });
             panel.enable();
 
-            expect(() => rowFor('tile-left').activate()).not.toThrow();
+            expect(() => rowFor('quicktiler-tile-left').activate()).not.toThrow();
             expect(() => menu().items.at(-1).activate()).not.toThrow();
             expect(menu().items[0].text).toBe('Tile');
         });
@@ -522,6 +522,41 @@ describe('Panel', () => {
             panel.disable();
 
             expect(tileMenu._wasDestroyed).toBe(true);
+        });
+
+        // Clutter can destroy an actor straight from C, through its own
+        // dispose vfunc, which never calls back into an overridden JS
+        // destroy() method -- only the 'destroy' signal, which every actor
+        // emits either way. A destroy() override is therefore never a
+        // reliable place to release the menu.
+        it('releases the toggle and its menu when the Shell destroys the toggle directly', () => {
+            start();
+            const tile = toggle();
+            const tileMenu = tile.menu;
+            // Open the menu first, so there is a built row whose own handler
+            // can be checked, not just an empty, unbuilt menu.
+            const row = rowFor('quicktiler-tile-left');
+            const shortcutsEnabled = settings.get_boolean(KEYS.SHORTCUTS_ENABLED);
+
+            tile.emit('destroy');
+
+            expect(tileMenu._wasDestroyed).toBe(true);
+
+            // disconnectObject(this) is what released the toggle's own
+            // 'clicked' handler; without it this click would still flip and
+            // write shortcuts-enabled.
+            tile.click();
+            expect(settings.get_boolean(KEYS.SHORTCUTS_ENABLED)).toBe(shortcutsEnabled);
+
+            // The menu's own destroy cascaded down to the row, releasing its
+            // 'activate' handler.
+            expect(row._wasDestroyed).toBe(true);
+            row.activate();
+            expect(actions).toEqual([]);
+
+            // _accelerators.clear() is what stops a later rebinding from
+            // retexting a label on a row that no longer exists.
+            expect(tile._accelerators.size).toBe(0);
         });
 
         it('destroys the tile menu when the tile is switched off', () => {

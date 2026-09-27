@@ -114,6 +114,39 @@ gnome-extensions uninstall tiler@napalm255.github.io
 The gap and shortcut settings do not carry over; they live under the old
 schema path and are set again in the preferences window.
 
+### Upgrading from 0.2.2 or earlier
+
+The keybinding names in the gschema are now prefixed with `quicktiler-`, so
+that Mutter's single, Shell-wide table of keybinding names can't collide with
+another extension's action of the same name.
+
+**Disable QuickTiler before you install the update, and log out and back in
+before you enable it again:**
+
+```bash
+gnome-extensions disable quicktiler@napalm255.github.io
+# install the update here — see Install above
+```
+
+Log out and back in, then:
+
+```bash
+gnome-extensions enable quicktiler@napalm255.github.io
+```
+
+Installing over a QuickTiler that is still enabled replaces the schema while
+the Shell keeps the old, still-running code loaded — it only picks up new
+code at the next logout — and that old code's `enable()` asks for keybinding
+keys the new schema would otherwise no longer have, which aborts the Shell.
+The gschema keeps the old, unprefixed keys for one release precisely so that
+does not happen; disabling first is the belt as well as the suspenders.
+
+GSettings has no rename, so nothing you customized under 0.2.2 or earlier
+carries over: a shortcut you changed resets to its default, and one you had
+cleared comes back bound to its default too. Open the preferences window and
+set it again. The old values are still there if you want to check them
+first — `dconf dump /org/gnome/shell/extensions/quicktiler/`.
+
 ## Development
 
 ```bash

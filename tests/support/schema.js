@@ -34,6 +34,34 @@ export function read(path) {
 }
 
 /**
+ * The pre-0.3.0 keybinding key names, before the `quicktiler-` prefix.
+ *
+ * The gschema keeps them for one release, as deprecated, unused entries, so
+ * that a 0.2.x copy of the extension still running when the new schema is
+ * installed — gnome-shell keeps its old code loaded until the next logout or
+ * lock/unlock — can still resolve the keybinding keys its `enable()` asks
+ * for, instead of aborting the Shell. `modules/actions.js` must never read
+ * them. Exported so the checks in tests/actions.test.js and
+ * tests/accelerator.test.js that compare the schema's keybinding keys
+ * against `ACTIONS` can exclude them by one shared list, rather than each
+ * hand-rolling its own.
+ *
+ * @type {ReadonlyArray<string>}
+ */
+export const DEPRECATED_KEYS = Object.freeze([
+    'tile-left',
+    'tile-right',
+    'tile-center',
+    'tile-maximize',
+    'focus-left',
+    'focus-right',
+    'swap-left',
+    'swap-right',
+    'move-monitor-next',
+    'move-monitor-prev',
+]);
+
+/**
  * Every keybinding key the gschema declares.
  *
  * Keybindings are the `as` keys; `gap` and any future scalar setting are not

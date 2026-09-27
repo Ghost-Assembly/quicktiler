@@ -8,28 +8,33 @@ import {
     parseAccelerator,
 } from '../modules/accelerator.js';
 import { ACTION_KEYS } from '../modules/actions.js';
-import { schemaDefaults } from './support/schema.js';
+import { DEPRECATED_KEYS, schemaDefaults } from './support/schema.js';
 
 describe('acceleratorLabel', () => {
     const defaults = schemaDefaults();
 
     it('finds a default for every action', () => {
         // Guards the regex: without this, the table below would pass by
-        // looking up keys that are simply absent.
-        expect(defaults.size).toBe(ACTION_KEYS.length);
+        // looking up keys that are simply absent. The deprecated keys carry
+        // the same defaults as their replacements, so they are excluded
+        // rather than counted twice.
+        const active = [...defaults.keys()].filter(
+            key => !DEPRECATED_KEYS.includes(key),
+        );
+        expect(active.length).toBe(ACTION_KEYS.length);
     });
 
     it.each([
-        ['tile-left', 'Super+Ctrl+←'],
-        ['tile-right', 'Super+Ctrl+→'],
-        ['tile-center', 'Super+Ctrl+↑'],
-        ['tile-maximize', 'Super+Ctrl+↓'],
-        ['focus-left', 'Super+['],
-        ['focus-right', 'Super+]'],
-        ['swap-left', 'Super+Ctrl+['],
-        ['swap-right', 'Super+Ctrl+]'],
-        ['move-monitor-next', 'Super+Ctrl+M'],
-        ['move-monitor-prev', 'Super+Ctrl+Shift+M'],
+        ['quicktiler-tile-left', 'Super+Ctrl+←'],
+        ['quicktiler-tile-right', 'Super+Ctrl+→'],
+        ['quicktiler-tile-center', 'Super+Ctrl+↑'],
+        ['quicktiler-tile-maximize', 'Super+Ctrl+↓'],
+        ['quicktiler-focus-left', 'Super+['],
+        ['quicktiler-focus-right', 'Super+]'],
+        ['quicktiler-swap-left', 'Super+Ctrl+['],
+        ['quicktiler-swap-right', 'Super+Ctrl+]'],
+        ['quicktiler-move-monitor-next', 'Super+Ctrl+M'],
+        ['quicktiler-move-monitor-prev', 'Super+Ctrl+Shift+M'],
     ])('renders the %s default as %s', (key, expected) => {
         expect(acceleratorLabel(defaults.get(key))).toBe(expected);
     });
