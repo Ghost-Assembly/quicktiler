@@ -162,12 +162,22 @@ describe('isValidBinding', () => {
         expect(isValidBinding(SHIFT, keyval, { ...gtk, codePoint: 0 })).toBe(false);
     });
 
-    // The same keys stay bindable with a modifier other than Shift.
-    it('accepts Ctrl+Left and Super+Tab', () => {
-        const CTRL = 4;
-        const SUPER = 0x4000000;
-        expect(isValidBinding(CTRL, 0xff51, { ...gtk, codePoint: 0 })).toBe(true);
-        expect(isValidBinding(SUPER, 0xff09, { ...gtk, codePoint: 0x09 })).toBe(true);
+    // The same keys stay bindable with a modifier other than Shift. Not Tab:
+    // Gtk.accelerator_valid refuses Tab with any modifier, so a Tab case here
+    // would pass only because acceleratorValid is stubbed.
+    it.each([
+        ['Ctrl+Left', 4, 0xff51, 0],
+        ['Super+Left', 0x4000000, 0xff51, 0],
+        ['Ctrl+Return', 4, 0xff0d, 0x0d],
+    ])('accepts %s', (_name, mask, keyval, codePoint) => {
+        expect(isValidBinding(mask, keyval, { ...gtk, codePoint })).toBe(true);
+    });
+
+    // Delete has a code point (0x7f), unlike F5, but a control character, so
+    // this exercises the \p{Cc} half of the rule rather than codePoint <= 0.
+    it('accepts Shift+Delete, since Delete types a control character', () => {
+        const DELETE = 0xffff;
+        expect(isValidBinding(SHIFT, DELETE, { ...gtk, codePoint: 0x7f })).toBe(true);
     });
 
     it('rejects Shift+A, which is how a capital A is typed', () => {
