@@ -60,22 +60,22 @@ describe('QuickTiler', () => {
         // name is already registered. Recording the key anyway made disable()
         // call removeKeybinding on a binding that was never registered.
         it('does not track a keybinding Mutter refused', () => {
-            Main.refuse.add('tile-left');
+            Main.refuse.add('quicktiler-tile-left');
             start();
             quicktiler.disable();
 
-            expect(Main.removeCalls).not.toContain('tile-left');
+            expect(Main.removeCalls).not.toContain('quicktiler-tile-left');
             expect(Main.removeCalls.sort()).toEqual(
-                ACTION_KEYS.filter(k => k !== 'tile-left').sort(),
+                ACTION_KEYS.filter(k => k !== 'quicktiler-tile-left').sort(),
             );
         });
 
         it('warns when a keybinding is refused', () => {
-            Main.refuse.add('swap-right');
+            Main.refuse.add('quicktiler-swap-right');
             start();
 
             expect(console.warn).toHaveBeenCalledWith(
-                expect.stringContaining('could not bind swap-right'),
+                expect.stringContaining('could not bind quicktiler-swap-right'),
             );
         });
 
@@ -160,7 +160,7 @@ describe('QuickTiler', () => {
 
             const window = world.workspace.add(new FakeWindow())[0];
             world.focus(window);
-            Main.press('tile-left');
+            Main.press('quicktiler-tile-left');
 
             expect(window.get_frame_rect()).toEqual(zone('left-quarter', WIDE, 40));
         });
@@ -171,7 +171,7 @@ describe('QuickTiler', () => {
 
             const window = world.workspace.add(new FakeWindow())[0];
             world.focus(window);
-            Main.press('tile-left');
+            Main.press('quicktiler-tile-left');
 
             expect(window.get_frame_rect()).toEqual(zone('left-quarter', WIDE, 0));
         });
@@ -205,7 +205,7 @@ describe('QuickTiler', () => {
             const window = world.workspace.add(new FakeWindow())[0];
             world.focus(window);
 
-            expect(quicktiler.run('tile-left')).toBe(true);
+            expect(quicktiler.run('quicktiler-tile-left')).toBe(true);
             expect(window.moves.at(-1)).toMatchObject(zone('left-quarter'));
         });
 
@@ -215,7 +215,7 @@ describe('QuickTiler', () => {
             const window = world.workspace.add(new FakeWindow())[0];
             world.focus(window);
 
-            expect(quicktiler.run('tile-left')).toBe(true);
+            expect(quicktiler.run('quicktiler-tile-left')).toBe(true);
             expect(window.moves).toHaveLength(1);
         });
 
@@ -230,7 +230,7 @@ describe('QuickTiler', () => {
             );
             world.focus(focused);
 
-            quicktiler.run('tile-right', target);
+            quicktiler.run('quicktiler-tile-right', target);
 
             expect(target.moves).toHaveLength(1);
             expect(focused.moves).toHaveLength(0);
@@ -241,7 +241,7 @@ describe('QuickTiler', () => {
             const target = world.workspace.add(new FakeWindow())[0];
             world.focus(null);
 
-            quicktiler.run('tile-left', target);
+            quicktiler.run('quicktiler-tile-left', target);
 
             expect(target.moves.at(-1)).toMatchObject(zone('left-quarter'));
         });
@@ -250,7 +250,7 @@ describe('QuickTiler', () => {
             const world = start();
             const target = world.workspace.add(new FakeWindow({ fullscreen: true }))[0];
 
-            quicktiler.run('tile-left', target);
+            quicktiler.run('quicktiler-tile-left', target);
 
             expect(target.moves).toHaveLength(0);
         });
@@ -263,8 +263,8 @@ describe('QuickTiler', () => {
             );
             world.focus(focused);
 
-            quicktiler.run('tile-left', target);
-            Main.press('tile-left');
+            quicktiler.run('quicktiler-tile-left', target);
+            Main.press('quicktiler-tile-left');
 
             expect(focused.moves).toHaveLength(1);
             expect(target.moves).toHaveLength(1);
@@ -292,7 +292,7 @@ describe('QuickTiler', () => {
             start();
             const window = focusOne();
 
-            Main.press('tile-left');
+            Main.press('quicktiler-tile-left');
             expect(window.get_frame_rect()).toEqual(zone('left-quarter'));
         });
 
@@ -300,11 +300,11 @@ describe('QuickTiler', () => {
             start();
             const window = focusOne();
 
-            Main.press('tile-left');
+            Main.press('quicktiler-tile-left');
             expect(window.get_frame_rect()).toEqual(zone('left-quarter'));
-            Main.press('tile-left');
+            Main.press('quicktiler-tile-left');
             expect(window.get_frame_rect()).toEqual(zone('left-half'));
-            Main.press('tile-left');
+            Main.press('quicktiler-tile-left');
             expect(window.get_frame_rect()).toEqual(zone('left-quarter'));
         });
 
@@ -313,7 +313,7 @@ describe('QuickTiler', () => {
             const window = focusOne();
 
             for (const id of ['center-half', 'center-top', 'center-bottom']) {
-                Main.press('tile-center');
+                Main.press('quicktiler-tile-center');
                 expect(window.get_frame_rect()).toEqual(zone(id));
             }
         });
@@ -322,9 +322,9 @@ describe('QuickTiler', () => {
             start();
             const window = focusOne();
 
-            Main.press('tile-right');
+            Main.press('quicktiler-tile-right');
             expect(window.get_frame_rect()).toEqual(zone('right-quarter'));
-            Main.press('tile-left');
+            Main.press('quicktiler-tile-left');
             expect(window.get_frame_rect()).toEqual(zone('left-quarter'));
         });
 
@@ -338,7 +338,7 @@ describe('QuickTiler', () => {
             const origins = [];
 
             for (let press = 0; press < 4; press += 1) {
-                Main.press('tile-center');
+                Main.press('quicktiler-tile-center');
                 const { x, y } = window.get_frame_rect();
                 origins.push({ x, y });
             }
@@ -358,11 +358,11 @@ describe('QuickTiler', () => {
             start();
             const window = focusOne({ minSize: { width: 600, height: 0 } });
 
-            Main.press('tile-left');
+            Main.press('quicktiler-tile-left');
             expect(window.get_frame_rect().width).toBe(600);
-            Main.press('tile-left');
+            Main.press('quicktiler-tile-left');
             expect(window.get_frame_rect()).toEqual(zone('left-half'));
-            Main.press('tile-left');
+            Main.press('quicktiler-tile-left');
             expect(window.moves.at(-1)).toMatchObject(zone('left-quarter'));
         });
 
@@ -370,7 +370,7 @@ describe('QuickTiler', () => {
             start();
             const window = focusOne({ maximized: true });
 
-            Main.press('tile-left');
+            Main.press('quicktiler-tile-left');
 
             expect(window.get_frame_rect()).toEqual(zone('left-quarter'));
         });
@@ -379,7 +379,7 @@ describe('QuickTiler', () => {
             start();
             const window = focusOne({ maximized: true });
 
-            Main.press('tile-left');
+            Main.press('quicktiler-tile-left');
 
             expect(window.is_maximized()).toBe(false);
             expect(window.maximized_vertically).toBe(false);
@@ -398,7 +398,7 @@ describe('QuickTiler', () => {
             start();
             const window = focusOne(options);
 
-            Main.press('tile-left');
+            Main.press('quicktiler-tile-left');
             expect(window.moves).toHaveLength(0);
         });
 
@@ -406,7 +406,7 @@ describe('QuickTiler', () => {
             start();
             world.focus(null);
 
-            expect(() => Main.press('tile-left')).not.toThrow();
+            expect(() => Main.press('quicktiler-tile-left')).not.toThrow();
         });
 
         // get_workspace() is null for an unmanaging window; this used to throw
@@ -416,7 +416,7 @@ describe('QuickTiler', () => {
             const orphan = new FakeWindow();
             world.focus(orphan);
 
-            expect(() => Main.press('tile-left')).not.toThrow();
+            expect(() => Main.press('quicktiler-tile-left')).not.toThrow();
             expect(orphan.moves).toHaveLength(0);
         });
     });
@@ -430,7 +430,7 @@ describe('QuickTiler', () => {
             const window = world.workspace.add(new FakeWindow({ monitor: -1 }))[0];
             world.focus(window);
 
-            expect(() => Main.press('tile-left')).not.toThrow();
+            expect(() => Main.press('quicktiler-tile-left')).not.toThrow();
             expect(window.moves).toHaveLength(0);
         });
 
@@ -439,7 +439,7 @@ describe('QuickTiler', () => {
             const window = world.workspace.add(new FakeWindow({ monitor: -1 }))[0];
             world.focus(window);
 
-            expect(() => Main.press('move-monitor-next')).not.toThrow();
+            expect(() => Main.press('quicktiler-move-monitor-next')).not.toThrow();
             expect(window.get_monitor()).toBe(-1);
             expect(window.moves).toHaveLength(0);
         });
@@ -451,7 +451,7 @@ describe('QuickTiler', () => {
             const window = world.workspace.add(new FakeWindow())[0];
             world.focus(window);
 
-            Main.press('tile-maximize');
+            Main.press('quicktiler-tile-maximize');
 
             expect(window.maximized_horizontally).toBe(true);
             expect(window.maximized_vertically).toBe(true);
@@ -464,8 +464,8 @@ describe('QuickTiler', () => {
             const window = world.workspace.add(new FakeWindow({ rect }))[0];
             world.focus(window);
 
-            Main.press('tile-maximize');
-            Main.press('tile-maximize');
+            Main.press('quicktiler-tile-maximize');
+            Main.press('quicktiler-tile-maximize');
 
             expect(window.maximized_horizontally).toBe(false);
             expect(window.get_frame_rect()).toEqual(rect);
@@ -477,7 +477,7 @@ describe('QuickTiler', () => {
             window.maximized_horizontally = true;
             world.focus(window);
 
-            Main.press('tile-maximize');
+            Main.press('quicktiler-tile-maximize');
 
             expect(window.maximized_vertically).toBe(true);
         });
@@ -493,11 +493,11 @@ describe('QuickTiler', () => {
             );
             world.focus(middle);
 
-            Main.press('focus-right');
+            Main.press('quicktiler-focus-right');
             expect(Main.activated).toEqual([right]);
 
             world.focus(middle);
-            Main.press('focus-left');
+            Main.press('quicktiler-focus-left');
             expect(Main.activated).toEqual([right, left]);
         });
 
@@ -513,7 +513,7 @@ describe('QuickTiler', () => {
             );
             world.focus(origin);
 
-            Main.press('focus-right');
+            Main.press('quicktiler-focus-right');
             expect(Main.activated).toEqual([far]);
             expect(Main.activated).not.toContain(hidden);
         });
@@ -529,7 +529,7 @@ describe('QuickTiler', () => {
             );
             world.focus(origin);
 
-            Main.press('focus-right');
+            Main.press('quicktiler-focus-right');
             expect(Main.activated).toEqual([big]);
         });
 
@@ -544,7 +544,7 @@ describe('QuickTiler', () => {
             );
             world.focus(origin);
 
-            Main.press('focus-right');
+            Main.press('quicktiler-focus-right');
             expect(Main.activated).toEqual([other]);
         });
 
@@ -553,7 +553,7 @@ describe('QuickTiler', () => {
             const only = world.workspace.add(new FakeWindow())[0];
             world.focus(only);
 
-            Main.press('focus-left');
+            Main.press('quicktiler-focus-left');
             expect(Main.activated).toEqual([]);
         });
     });
@@ -569,7 +569,7 @@ describe('QuickTiler', () => {
             );
             world.focus(left);
 
-            Main.press('swap-right');
+            Main.press('quicktiler-swap-right');
 
             expect(left.get_frame_rect()).toEqual(b);
             expect(right.get_frame_rect()).toEqual(a);
@@ -596,7 +596,7 @@ describe('QuickTiler', () => {
             );
             world.focus(big);
 
-            Main.press('swap-right');
+            Main.press('quicktiler-swap-right');
             big.commit();
             small.commit();
 
@@ -623,7 +623,7 @@ describe('QuickTiler', () => {
             );
             world.focus(left);
 
-            Main.press('swap-right');
+            Main.press('quicktiler-swap-right');
             left.commit();
             right.commit();
 
@@ -649,7 +649,7 @@ describe('QuickTiler', () => {
             );
             world.focus(left);
 
-            Main.press('swap-right');
+            Main.press('quicktiler-swap-right');
             left.commit();
             right.commit();
 
@@ -669,7 +669,7 @@ describe('QuickTiler', () => {
             );
             world.focus(left);
 
-            Main.press('swap-right');
+            Main.press('quicktiler-swap-right');
             left.commit();
             right.commit();
 
@@ -687,7 +687,7 @@ describe('QuickTiler', () => {
             );
             world.focus(right);
 
-            Main.press('swap-left');
+            Main.press('quicktiler-swap-left');
 
             expect(right.get_frame_rect()).toEqual(a);
             expect(left.get_frame_rect()).toEqual(b);
@@ -698,7 +698,7 @@ describe('QuickTiler', () => {
             const only = world.workspace.add(new FakeWindow())[0];
             world.focus(only);
 
-            Main.press('swap-right');
+            Main.press('quicktiler-swap-right');
             expect(only.moves).toHaveLength(0);
         });
     });
@@ -709,7 +709,7 @@ describe('QuickTiler', () => {
             const window = world.workspace.add(new FakeWindow())[0];
             world.focus(window);
 
-            Main.press('move-monitor-next');
+            Main.press('quicktiler-move-monitor-next');
             expect(window.get_monitor()).toBe(0);
             expect(window.moves).toHaveLength(0);
         });
@@ -719,9 +719,9 @@ describe('QuickTiler', () => {
             const window = world.workspace.add(new FakeWindow())[0];
             world.focus(window);
 
-            Main.press('move-monitor-next');
+            Main.press('quicktiler-move-monitor-next');
             expect(window.get_monitor()).toBe(1);
-            Main.press('move-monitor-next');
+            Main.press('quicktiler-move-monitor-next');
             expect(window.get_monitor()).toBe(0);
         });
 
@@ -731,9 +731,9 @@ describe('QuickTiler', () => {
             const window = world.workspace.add(new FakeWindow())[0];
             world.focus(window);
 
-            Main.press('move-monitor-prev');
+            Main.press('quicktiler-move-monitor-prev');
             expect(window.get_monitor()).toBe(1);
-            Main.press('move-monitor-prev');
+            Main.press('quicktiler-move-monitor-prev');
             expect(window.get_monitor()).toBe(0);
         });
 
@@ -742,10 +742,10 @@ describe('QuickTiler', () => {
             const window = world.workspace.add(new FakeWindow())[0];
             world.focus(window);
 
-            Main.press('tile-left');
+            Main.press('quicktiler-tile-left');
             expect(window.get_frame_rect()).toEqual(zone('left-quarter', WIDE));
 
-            Main.press('move-monitor-next');
+            Main.press('quicktiler-move-monitor-next');
             expect(window.get_monitor()).toBe(1);
             expect(window.get_frame_rect()).toEqual(zone('left-quarter', SECOND));
         });
@@ -756,7 +756,7 @@ describe('QuickTiler', () => {
             const window = world.workspace.add(new FakeWindow({ rect }))[0];
             world.focus(window);
 
-            Main.press('move-monitor-next');
+            Main.press('quicktiler-move-monitor-next');
 
             expect(window.get_monitor()).toBe(1);
             expect(window.moves).toHaveLength(0);

@@ -20,16 +20,16 @@ describe('acceleratorLabel', () => {
     });
 
     it.each([
-        ['tile-left', 'Super+Ctrl+←'],
-        ['tile-right', 'Super+Ctrl+→'],
-        ['tile-center', 'Super+Ctrl+↑'],
-        ['tile-maximize', 'Super+Ctrl+↓'],
-        ['focus-left', 'Super+['],
-        ['focus-right', 'Super+]'],
-        ['swap-left', 'Super+Ctrl+['],
-        ['swap-right', 'Super+Ctrl+]'],
-        ['move-monitor-next', 'Super+Ctrl+M'],
-        ['move-monitor-prev', 'Super+Ctrl+Shift+M'],
+        ['quicktiler-tile-left', 'Super+Ctrl+←'],
+        ['quicktiler-tile-right', 'Super+Ctrl+→'],
+        ['quicktiler-tile-center', 'Super+Ctrl+↑'],
+        ['quicktiler-tile-maximize', 'Super+Ctrl+↓'],
+        ['quicktiler-focus-left', 'Super+['],
+        ['quicktiler-focus-right', 'Super+]'],
+        ['quicktiler-swap-left', 'Super+Ctrl+['],
+        ['quicktiler-swap-right', 'Super+Ctrl+]'],
+        ['quicktiler-move-monitor-next', 'Super+Ctrl+M'],
+        ['quicktiler-move-monitor-prev', 'Super+Ctrl+Shift+M'],
     ])('renders the %s default as %s', (key, expected) => {
         expect(acceleratorLabel(defaults.get(key))).toBe(expected);
     });

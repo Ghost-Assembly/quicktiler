@@ -49,19 +49,19 @@
       to switch-to-workspace-1, and Super+Shift+Left/Right to move-to-monitor-*.
     -->
 
-    <key type="as" name="tile-left">
+    <key type="as" name="quicktiler-tile-left">
       <default><![CDATA[['<Super><Control>Left']]]></default>
       <summary>Tile left</summary>
       <description>Cycle the focused window through the left zones.</description>
     </key>
 
-    <key type="as" name="tile-right">
+    <key type="as" name="quicktiler-tile-right">
       <default><![CDATA[['<Super><Control>Right']]]></default>
       <summary>Tile right</summary>
       <description>Cycle the focused window through the right zones.</description>
     </key>
 
-    <key type="as" name="tile-center">
+    <key type="as" name="quicktiler-tile-center">
       <default><![CDATA[['<Super><Control>Up']]]></default>
       <summary>Tile center</summary>
       <description>
@@ -70,37 +70,37 @@
       </description>
     </key>
 
-    <key type="as" name="tile-maximize">
+    <key type="as" name="quicktiler-tile-maximize">
       <default><![CDATA[['<Super><Control>Down']]]></default>
       <summary>Maximize</summary>
       <description>Fill the work area, or restore if already filling it.</description>
     </key>
 
-    <key type="as" name="focus-left">
+    <key type="as" name="quicktiler-focus-left">
       <default><![CDATA[['<Super>bracketleft']]]></default>
       <summary>Focus left</summary>
       <description>Move focus to the nearest window to the left.</description>
     </key>
 
-    <key type="as" name="focus-right">
+    <key type="as" name="quicktiler-focus-right">
       <default><![CDATA[['<Super>bracketright']]]></default>
       <summary>Focus right</summary>
       <description>Move focus to the nearest window to the right.</description>
     </key>
 
-    <key type="as" name="swap-left">
+    <key type="as" name="quicktiler-swap-left">
       <default><![CDATA[['<Super><Control>bracketleft']]]></default>
       <summary>Swap left</summary>
       <description>Exchange the focused window with its left neighbor.</description>
     </key>
 
-    <key type="as" name="swap-right">
+    <key type="as" name="quicktiler-swap-right">
       <default><![CDATA[['<Super><Control>bracketright']]]></default>
       <summary>Swap right</summary>
       <description>Exchange the focused window with its right neighbor.</description>
     </key>
 
-    <key type="as" name="move-monitor-next">
+    <key type="as" name="quicktiler-move-monitor-next">
       <default><![CDATA[['<Super><Control>m']]]></default>
       <summary>Move to next monitor</summary>
       <description>
@@ -108,7 +108,7 @@
       </description>
     </key>
 
-    <key type="as" name="move-monitor-prev">
+    <key type="as" name="quicktiler-move-monitor-prev">
       <default><![CDATA[['<Super><Control><Shift>m']]]></default>
       <summary>Move to previous monitor</summary>
       <description>

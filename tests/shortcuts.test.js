@@ -26,41 +26,44 @@ describe('conflictingActions', () => {
     };
 
     it('finds no conflict when nothing else holds the accelerator', () => {
-        const lookup = bindings({ 'tile-right': ['<Super>k'] });
+        const lookup = bindings({ 'quicktiler-tile-right': ['<Super>k'] });
 
-        expect(conflictingActions('tile-left', '<Super>j', lookup)).toEqual([]);
+        expect(conflictingActions('quicktiler-tile-left', '<Super>j', lookup)).toEqual(
+            [],
+        );
     });
 
     it('names the action already holding the accelerator', () => {
-        const lookup = bindings({ 'swap-right': ['<Super>j'] });
+        const lookup = bindings({ 'quicktiler-swap-right': ['<Super>j'] });
 
-        expect(conflictingActions('tile-left', '<Super>j', lookup)).toEqual([
-            'swap-right',
+        expect(conflictingActions('quicktiler-tile-left', '<Super>j', lookup)).toEqual([
+            'quicktiler-swap-right',
         ]);
     });
 
     it('does not report the action against itself', () => {
-        const lookup = bindings({ 'tile-left': ['<Super>j'] });
+        const lookup = bindings({ 'quicktiler-tile-left': ['<Super>j'] });
 
-        expect(conflictingActions('tile-left', '<Super>j', lookup)).toEqual([]);
+        expect(conflictingActions('quicktiler-tile-left', '<Super>j', lookup)).toEqual(
+            [],
+        );
     });
 
     it('reports every holder when more than one already has it', () => {
         const lookup = bindings({
-            'swap-left': ['<Super>j'],
-            'focus-right': ['<Super>j'],
+            'quicktiler-swap-left': ['<Super>j'],
+            'quicktiler-focus-right': ['<Super>j'],
         });
 
-        expect(conflictingActions('tile-left', '<Super>j', lookup).sort()).toEqual([
-            'focus-right',
-            'swap-left',
-        ]);
+        expect(
+            conflictingActions('quicktiler-tile-left', '<Super>j', lookup).sort(),
+        ).toEqual(['quicktiler-focus-right', 'quicktiler-swap-left']);
     });
 
     it('treats clearing a binding as conflicting with nothing', () => {
-        const lookup = bindings({ 'swap-right': [''] });
+        const lookup = bindings({ 'quicktiler-swap-right': [''] });
 
-        expect(conflictingActions('tile-left', '', lookup)).toEqual([]);
+        expect(conflictingActions('quicktiler-tile-left', '', lookup)).toEqual([]);
     });
 
     // The gschema writes modifiers Super first; prefs.js writes a rebound
@@ -68,33 +71,35 @@ describe('conflictingActions', () => {
     // order. The two spellings are one key combination to Mutter, and a raw
     // string comparison let both actions hold it.
     it('finds a conflict spelled with the modifiers in another order', () => {
-        const lookup = bindings({ 'tile-left': ['<Super><Control>Left'] });
+        const lookup = bindings({ 'quicktiler-tile-left': ['<Super><Control>Left'] });
 
-        expect(conflictingActions('swap-left', '<Control><Super>Left', lookup)).toEqual(
-            ['tile-left'],
-        );
+        expect(
+            conflictingActions('quicktiler-swap-left', '<Control><Super>Left', lookup),
+        ).toEqual(['quicktiler-tile-left']);
     });
 
     it('finds a conflict spelled with a modifier alias', () => {
-        const lookup = bindings({ 'tile-left': ['<Super><Primary>Left'] });
+        const lookup = bindings({ 'quicktiler-tile-left': ['<Super><Primary>Left'] });
 
-        expect(conflictingActions('swap-left', '<Control><Mod4>left', lookup)).toEqual([
-            'tile-left',
-        ]);
+        expect(
+            conflictingActions('quicktiler-swap-left', '<Control><Mod4>left', lookup),
+        ).toEqual(['quicktiler-tile-left']);
     });
 
     it('checks every accelerator an action holds, not just the first', () => {
-        const lookup = bindings({ 'tile-left': ['<Super>F5', '<Super>j'] });
+        const lookup = bindings({ 'quicktiler-tile-left': ['<Super>F5', '<Super>j'] });
 
-        expect(conflictingActions('swap-left', '<Super>j', lookup)).toEqual([
-            'tile-left',
+        expect(conflictingActions('quicktiler-swap-left', '<Super>j', lookup)).toEqual([
+            'quicktiler-tile-left',
         ]);
     });
 
     it('ignores an action whose accelerator merely resembles the new one', () => {
-        const lookup = bindings({ 'swap-right': ['<Super><Shift>j'] });
+        const lookup = bindings({ 'quicktiler-swap-right': ['<Super><Shift>j'] });
 
-        expect(conflictingActions('tile-left', '<Super>j', lookup)).toEqual([]);
+        expect(conflictingActions('quicktiler-tile-left', '<Super>j', lookup)).toEqual(
+            [],
+        );
     });
 });
 

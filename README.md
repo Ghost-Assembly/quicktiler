@@ -114,6 +114,14 @@ gnome-extensions uninstall tiler@napalm255.github.io
 The gap and shortcut settings do not carry over; they live under the old
 schema path and are set again in the preferences window.
 
+### Upgrading from 0.2.x
+
+The keybinding names in the gschema are now prefixed with `quicktiler-`, so
+that Mutter's single, Shell-wide table of keybinding names can't collide with
+another extension's action of the same name. GSettings has no rename, so a
+shortcut you customized under 0.2.x or earlier resets to its default; open the
+preferences window and set it again.
+
 ## Development
 
 ```bash

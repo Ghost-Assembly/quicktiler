@@ -777,6 +777,16 @@
                             Wayland that means a new session.
                         </p>
                     </div>
+                    <h3>Upgrading from 0.2.x</h3>
+                    <p>
+                        The gschema’s keybinding names are now prefixed with
+                        <code>quicktiler-</code>, because Mutter keeps one table of
+                        keybinding names for the whole Shell and refuses a name another
+                        extension already claimed. GSettings has no rename, so this
+                        shipped with no migration: a shortcut you customized under 0.2.x
+                        or earlier resets to its default, and the preferences window is
+                        where to set it again.
+                    </p>
                 </section>
 
                 <section class="section" id="zones" aria-labelledby="zones-title">
