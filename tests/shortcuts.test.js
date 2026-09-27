@@ -123,6 +123,17 @@ describe('isValidBinding', () => {
         expect(isValidBinding(SHIFT, F5, { ...gtk, codePoint: 0 })).toBe(true);
     });
 
+    // Return does have a code point (0x0d, carriage return) -- unlike F5,
+    // which has none at all -- so this exercises the \p{Cc} half of the rule
+    // rather than the codePoint <= 0 half above.
+    it('accepts Shift+Return, since Return types a control character', () => {
+        const RETURN = 0xff0d;
+        const CARRIAGE_RETURN = 0x0d;
+        expect(
+            isValidBinding(SHIFT, RETURN, { ...gtk, codePoint: CARRIAGE_RETURN }),
+        ).toBe(true);
+    });
+
     it('rejects Shift+A, which is how a capital A is typed', () => {
         const A = 0x41;
         expect(isValidBinding(SHIFT, A, { ...gtk, codePoint: A })).toBe(false);
