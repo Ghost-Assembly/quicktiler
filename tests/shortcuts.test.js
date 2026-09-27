@@ -123,15 +123,51 @@ describe('isValidBinding', () => {
         expect(isValidBinding(SHIFT, F5, { ...gtk, codePoint: 0 })).toBe(true);
     });
 
-    // Return does have a code point (0x0d, carriage return) -- unlike F5,
-    // which has none at all -- so this exercises the \p{Cc} half of the rule
-    // rather than the codePoint <= 0 half above.
-    it('accepts Shift+Return, since Return types a control character', () => {
-        const RETURN = 0xff0d;
-        const CARRIAGE_RETURN = 0x0d;
-        expect(
-            isValidBinding(SHIFT, RETURN, { ...gtk, codePoint: CARRIAGE_RETURN }),
-        ).toBe(true);
+    // Shift with these selects text, moves focus or ends a line in every
+    // application, though none of them types a visible character. Keyvals and
+    // code points as Gdk 4 gives them (Gdk.KEY_*, Gdk.keyval_to_unicode) under
+    // gjs; ISO_Left_Tab is what GTK reports for Shift+Tab, and dead_acute is a
+    // dead key, which types the accent over the next letter.
+    it.each([
+        ['Left', 0xff51, 0],
+        ['Up', 0xff52, 0],
+        ['Right', 0xff53, 0],
+        ['Down', 0xff54, 0],
+        ['Home', 0xff50, 0],
+        ['End', 0xff57, 0],
+        ['Page_Up', 0xff55, 0],
+        ['Page_Down', 0xff56, 0],
+        ['Tab', 0xff09, 0x09],
+        ['ISO_Left_Tab', 0xfe20, 0],
+        ['Return', 0xff0d, 0x0d],
+        ['KP_Enter', 0xff8d, 0],
+        ['Mode_switch', 0xff7e, 0],
+        ['dead_acute', 0xfe51, 0],
+    ])(
+        'rejects Shift+%s, which applications need for editing text',
+        (_name, keyval, codePoint) => {
+            expect(isValidBinding(SHIFT, keyval, { ...gtk, codePoint })).toBe(false);
+        },
+    );
+
+    // The ends of each run of dead keys.
+    it.each([
+        ['dead_grave', 0xfe50],
+        ['dead_currency', 0xfe6f],
+        ['dead_a', 0xfe80],
+        ['dead_hamza', 0xfe8d],
+        ['dead_lowline', 0xfe90],
+        ['dead_longsolidusoverlay', 0xfe93],
+    ])('rejects Shift+%s, a dead key', (_name, keyval) => {
+        expect(isValidBinding(SHIFT, keyval, { ...gtk, codePoint: 0 })).toBe(false);
+    });
+
+    // The same keys stay bindable with a modifier other than Shift.
+    it('accepts Ctrl+Left and Super+Tab', () => {
+        const CTRL = 4;
+        const SUPER = 0x4000000;
+        expect(isValidBinding(CTRL, 0xff51, { ...gtk, codePoint: 0 })).toBe(true);
+        expect(isValidBinding(SUPER, 0xff09, { ...gtk, codePoint: 0x09 })).toBe(true);
     });
 
     it('rejects Shift+A, which is how a capital A is typed', () => {
