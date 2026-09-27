@@ -69,7 +69,7 @@ export function isValidBinding(
  * @param {number} keyval Key value.
  * @param {number} mask Modifier mask, reduced to the default mod mask.
  * @param {object} gtk Gdk/Gtk values: escapeKey, backspaceKey, shiftMask,
- *   acceleratorValid.
+ *   acceleratorValid, codePoint.
  * @returns {string} One of the CAPTURE_* outcomes.
  */
 export function captureOutcome(keyval, mask, gtk) {
