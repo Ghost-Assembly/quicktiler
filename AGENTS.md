@@ -53,7 +53,18 @@ anyone — human or agent — changing it.
   second extension could just as easily pick. GSettings has no rename, so
   this shipped with no migration: a binding a user had customized under the
   old, unprefixed key does not carry over, and the action falls back to its
-  default. See README.md's "Upgrading from 0.2.x".
+  default. See README.md's "Upgrading from 0.2.2 or earlier".
+- The gschema also still declares the ten old, unprefixed keys
+  (`tile-left`, `focus-right`, `swap-left`, …), unread by any current code, as
+  deprecated entries with their old defaults. Installing an update replaces
+  the schema at once, but the Shell keeps an already-enabled extension's old
+  code loaded until the next logout or lock/unlock — so a 0.2.x copy still
+  running when the schema is replaced would have its `enable()` ask Mutter
+  for a keybinding key the new schema no longer has, and abort the Shell.
+  Keeping the old keys, unused, is what lets that old code keep running until
+  logout instead. A later release removes this block entirely;
+  `tests/actions.test.js` checks that they are never read into `ACTIONS` in
+  the meantime.
 - Decisions live in the gi-free modules — `zones.js`, `windows.js`,
   `neighbors.js`, `actions.js`, `shortcuts.js`, `accelerator.js`,
   `settings.js` — which import nothing (`gi://` or `resource:///`), so Vitest

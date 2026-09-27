@@ -777,15 +777,64 @@
                             Wayland that means a new session.
                         </p>
                     </div>
-                    <h3>Upgrading from 0.2.x</h3>
+                    <h3>Upgrading from 0.2.2 or earlier</h3>
                     <p>
                         The gschema’s keybinding names are now prefixed with
                         <code>quicktiler-</code>, because Mutter keeps one table of
                         keybinding names for the whole Shell and refuses a name another
-                        extension already claimed. GSettings has no rename, so this
-                        shipped with no migration: a shortcut you customized under 0.2.x
-                        or earlier resets to its default, and the preferences window is
-                        where to set it again.
+                        extension already claimed.
+                    </p>
+                    <div class="note">
+                        <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                        >
+                            <circle cx="12" cy="12" r="9" />
+                            <path d="M12 11v5" />
+                            <path d="M12 7.5h.01" />
+                        </svg>
+                        <p>
+                            <strong
+                                >Disable QuickTiler before you install the update, and
+                                log out and back in before you enable it again.</strong
+                            >
+                            Installing over a copy that is still enabled replaces the
+                            schema while the Shell keeps its old code running — new code
+                            is only picked up at the next logout — and that old code’s
+                            <code>enable()</code> asks for keybinding keys the new
+                            schema would otherwise no longer have, which aborts the
+                            Shell. The old, unprefixed keys stay in the schema for one
+                            release so that does not happen; disabling first is the belt
+                            as well as the suspenders.
+                        </p>
+                    </div>
+                    <div class="code night">
+                        <header>
+                            <span>Shell</span
+                            ><span class="dots" aria-hidden="true"
+                                ><i></i><i></i><i></i
+                            ></span>
+                        </header>
+                        <pre
+                            tabindex="0"
+                        ><span class="p">$ </span><span class="k">gnome-extensions</span> disable quicktiler@napalm255.github.io
+<span class="c"># install the update, log out and back in, then:</span>
+<span class="p">$ </span><span class="k">gnome-extensions</span> enable quicktiler@napalm255.github.io</pre>
+                    </div>
+                    <p>
+                        GSettings has no rename, so nothing you customized under 0.2.2
+                        or earlier carries over: a shortcut you changed resets to its
+                        default, and one you had cleared comes back bound to its default
+                        too. Open the preferences window and set it again. The old
+                        values are still there if you want to check them first —
+                        <code>dconf dump /org/gnome/shell/extensions/quicktiler/</code>.
                     </p>
                 </section>
 

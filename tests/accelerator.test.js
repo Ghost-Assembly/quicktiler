@@ -8,15 +8,20 @@ import {
     parseAccelerator,
 } from '../modules/accelerator.js';
 import { ACTION_KEYS } from '../modules/actions.js';
-import { schemaDefaults } from './support/schema.js';
+import { DEPRECATED_KEYS, schemaDefaults } from './support/schema.js';
 
 describe('acceleratorLabel', () => {
     const defaults = schemaDefaults();
 
     it('finds a default for every action', () => {
         // Guards the regex: without this, the table below would pass by
-        // looking up keys that are simply absent.
-        expect(defaults.size).toBe(ACTION_KEYS.length);
+        // looking up keys that are simply absent. The deprecated keys carry
+        // the same defaults as their replacements, so they are excluded
+        // rather than counted twice.
+        const active = [...defaults.keys()].filter(
+            key => !DEPRECATED_KEYS.includes(key),
+        );
+        expect(active.length).toBe(ACTION_KEYS.length);
     });
 
     it.each([
