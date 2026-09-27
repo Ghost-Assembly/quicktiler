@@ -529,14 +529,34 @@ describe('Panel', () => {
         // destroy() method -- only the 'destroy' signal, which every actor
         // emits either way. A destroy() override is therefore never a
         // reliable place to release the menu.
-        it('destroys the tile menu when the Shell destroys the toggle directly', () => {
+        it('releases the toggle and its menu when the Shell destroys the toggle directly', () => {
             start();
             const tile = toggle();
             const tileMenu = tile.menu;
+            // Open the menu first, so there is a built row whose own handler
+            // can be checked, not just an empty, unbuilt menu.
+            const row = rowFor('quicktiler-tile-left');
+            const shortcutsEnabled = settings.get_boolean(KEYS.SHORTCUTS_ENABLED);
 
             tile.emit('destroy');
 
             expect(tileMenu._wasDestroyed).toBe(true);
+
+            // disconnectObject(this) is what released the toggle's own
+            // 'clicked' handler; without it this click would still flip and
+            // write shortcuts-enabled.
+            tile.click();
+            expect(settings.get_boolean(KEYS.SHORTCUTS_ENABLED)).toBe(shortcutsEnabled);
+
+            // The menu's own destroy cascaded down to the row, releasing its
+            // 'activate' handler.
+            expect(row._wasDestroyed).toBe(true);
+            row.activate();
+            expect(actions).toEqual([]);
+
+            // _accelerators.clear() is what stops a later rebinding from
+            // retexting a label on a row that no longer exists.
+            expect(tile._accelerators.size).toBe(0);
         });
 
         it('destroys the tile menu when the tile is switched off', () => {
