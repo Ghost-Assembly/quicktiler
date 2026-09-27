@@ -4,7 +4,7 @@
           path="/org/gnome/shell/extensions/quicktiler/">
 
     <!--
-      The two coarse switches. Both are written by the quick settings tile and
+      The two coarse switches. Both are written by the Quick Settings tile and
       by the preferences window; modules/settings.js names them once and
       tests/settings.test.js fails if this file and that one disagree.
     -->
