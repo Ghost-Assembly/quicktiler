@@ -10,28 +10,17 @@ import {
     GROUPS,
     OPERATIONS,
 } from '../modules/actions.js';
-import { DEPRECATED_KEYS, read, schemaDefaults, schemaKeys } from './support/schema.js';
+import { read, schemaDefaults, schemaKeys } from './support/schema.js';
 
 const README = fileURLToPath(new URL('../README.md', import.meta.url));
 const DOCS = fileURLToPath(new URL('../docs/index.html', import.meta.url));
-
-/**
- * The schema's keybinding keys the current code is meant to know about --
- * everything except the deprecated, pre-0.3.0 names it keeps only so a
- * still-running 0.2.x doesn't crash the Shell.
- *
- * @returns {string[]} Schema key names, in declaration order.
- */
-function activeSchemaKeys() {
-    return schemaKeys().filter(key => !DEPRECATED_KEYS.includes(key));
-}
 
 describe('ACTIONS', () => {
     // The three-way drift this guards against is silent at runtime: a key in
     // the schema with no entry here is a shortcut the preferences window never
     // shows, and an entry here with no schema key makes getSettings() abort.
     it('matches the gschema keybinding keys exactly', () => {
-        expect([...ACTION_KEYS].sort()).toEqual(activeSchemaKeys().sort());
+        expect([...ACTION_KEYS].sort()).toEqual(schemaKeys().sort());
     });
 
     it('finds a non-empty set of keys in the schema', () => {
@@ -41,18 +30,7 @@ describe('ACTIONS', () => {
     });
 
     it('lists actions in the schema declaration order', () => {
-        expect([...ACTION_KEYS]).toEqual(activeSchemaKeys());
-    });
-
-    // The gschema keeps these for one release so a 0.2.x copy of the
-    // extension still running when the schema is replaced can still resolve
-    // its keybinding keys instead of aborting gnome-shell (see the gschema's
-    // own comment and AGENTS.md). The current code must never read them.
-    it('keeps the deprecated, unprefixed keys in the schema, but never in ACTIONS', () => {
-        for (const key of DEPRECATED_KEYS) {
-            expect(schemaKeys()).toContain(key);
-            expect(ACTION_KEYS).not.toContain(key);
-        }
+        expect([...ACTION_KEYS]).toEqual(schemaKeys());
     });
 
     it('gives every action a unique key', () => {
@@ -207,13 +185,8 @@ describe('documented shortcuts', () => {
 
     it('finds a keybinding default for every action in the schema', () => {
         // Guards the parser: without this, an unmatched regex would let the
-        // comparisons below pass by comparing two empty lists. The deprecated
-        // keys carry the same defaults as their replacements, so they are
-        // excluded here rather than counted twice.
-        const active = [...schemaDefaults().keys()].filter(
-            key => !DEPRECATED_KEYS.includes(key),
-        );
-        expect(active.length).toBe(ACTION_KEYS.length);
+        // comparisons below pass by comparing two empty lists.
+        expect([...schemaDefaults().keys()]).toEqual([...ACTION_KEYS]);
     });
 
     it.each([

@@ -42,29 +42,16 @@ anyone — human or agent — changing it.
 ## Hard constraints
 
 - The uuid `quicktiler@napalm255.github.io` is fixed. GNOME identifies an
-  extension by its uuid; changing it orphans every existing install exactly
-  the way the Tiler → QuickTiler rename once did (README's "Upgrading from
-  Tiler 0.1.0" is the scar tissue from that).
+  extension by its uuid; changing it makes GNOME treat it as a different
+  extension.
 - The gschema keybinding key names are prefixed with `quicktiler-`
   (`quicktiler-tile-left`, `quicktiler-focus-right`, `quicktiler-swap-left`,
   …), the same way quickts prefixes `quickts-open-menu`: Mutter keeps one
   table of keybinding names for the whole Shell and refuses a name already
   claimed by another extension, so an unprefixed `tile-left` is a name a
-  second extension could just as easily pick. GSettings has no rename, so
-  this shipped with no migration: a binding a user had customized under the
-  old, unprefixed key does not carry over, and the action falls back to its
-  default. See README.md's "Upgrading from 0.2.2 or earlier".
-- The gschema also still declares the ten old, unprefixed keys
-  (`tile-left`, `focus-right`, `swap-left`, …), unread by any current code, as
-  deprecated entries with their old defaults. Installing an update replaces
-  the schema at once, but the Shell keeps an already-enabled extension's old
-  code loaded until the next logout or lock/unlock — so a 0.2.x copy still
-  running when the schema is replaced would have its `enable()` ask Mutter
-  for a keybinding key the new schema no longer has, and abort the Shell.
-  Keeping the old keys, unused, is what lets that old code keep running until
-  logout instead. A later release removes this block entirely;
-  `tests/actions.test.js` checks that they are never read into `ACTIONS` in
-  the meantime.
+  second extension could just as easily pick. The schema declares only the
+  current action keys; `tests/actions.test.js` checks that they match `ACTIONS`
+  exactly.
 - Decisions live in the gi-free modules — `zones.js`, `windows.js`,
   `neighbors.js`, `actions.js`, `shortcuts.js`, `accelerator.js`,
   `settings.js` — which import nothing (`gi://` or `resource:///`), so Vitest
