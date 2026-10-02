@@ -13,7 +13,7 @@ export default {
         ['zones', 'Zones'],
         ['quick-settings', 'Quick Settings'],
         ['preferences', 'Preferences'],
-        ['shortcuts', 'Shortcuts'],
+        ['keyboard', 'Keyboard'],
         ['architecture', 'Architecture'],
         ['testing', 'Testing'],
         ['packaging', 'Packaging'],
