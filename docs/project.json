@@ -1,0 +1,5 @@
+{
+  "$schema": "project.schema.json",
+  "repository": "quicktiler",
+  "requirements": "Requires a GNOME desktop session; window behavior also depends on each application and its minimum size."
+}

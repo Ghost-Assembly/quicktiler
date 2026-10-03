@@ -10,6 +10,7 @@ export default {
     sections: [
         ['overview', 'Overview'],
         ['install', 'Install'],
+        ['uninstall', 'Uninstall'],
         ['zones', 'Zones'],
         ['quick-settings', 'Quick Settings'],
         ['preferences', 'Preferences'],

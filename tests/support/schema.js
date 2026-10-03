@@ -9,8 +9,11 @@
 // others quietly checking less than they claim to. That is the same drift these
 // suites exist to catch, so it is read in one place instead.
 
-import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+
+import xml from '../../schemas/org.gnome.shell.extensions.quicktiler.gschema.xml?raw';
+import readme from '../../README.md?raw';
+import page from '../../docs/index.html?raw';
 
 /** Absolute path to the shipped gschema. */
 export const SCHEMA = fileURLToPath(
@@ -21,16 +24,19 @@ export const SCHEMA = fileURLToPath(
 );
 
 /**
- * Read a file the tests own, by absolute path.
+ * Read one of the statically imported repository fixtures, by absolute path.
  *
  * @param {string} path Absolute path.
  * @returns {string} File contents.
  */
 export function read(path) {
-    // Each path is a module-relative constant resolved from import.meta.url, not
-    // input of any kind; the rule cannot see that it is not a variable path.
-    // eslint-disable-next-line security/detect-non-literal-fs-filename
-    return readFileSync(path, 'utf8');
+    const fixture = new Map([
+        [SCHEMA, xml],
+        [fileURLToPath(new URL('../../README.md', import.meta.url)), readme],
+        [fileURLToPath(new URL('../../docs/index.html', import.meta.url)), page],
+    ]);
+    if (!fixture.has(path)) throw new Error('Unknown repository fixture.');
+    return fixture.get(path);
 }
 
 /**
