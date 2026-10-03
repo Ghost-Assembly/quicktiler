@@ -1,0 +1,22 @@
+{
+  "$schema": "quick-project.schema.json",
+  "runtimeFiles": [
+    "metadata.json",
+    "extension.js",
+    "prefs.js",
+    "LICENSE",
+    "modules/accelerator.js",
+    "modules/actions.js",
+    "modules/neighbors.js",
+    "modules/panel.js",
+    "modules/quicktiler.js",
+    "modules/settings.js",
+    "modules/shortcuts.js",
+    "modules/windows.js",
+    "modules/zones.js",
+    "schemas/org.gnome.shell.extensions.quicktiler.gschema.xml",
+    "icons/quicktiler-symbolic.svg"
+  ],
+  "docsPort": 8325,
+  "nativeTests": false
+}

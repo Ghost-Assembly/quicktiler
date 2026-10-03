@@ -1,5 +1,21 @@
 # QuickTiler
 
+<!-- quick-template:badges:start -->
+
+[![CI](https://github.com/Ghost-Assembly/quicktiler/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Ghost-Assembly/quicktiler/actions/workflows/ci.yml)
+[![Security](https://github.com/Ghost-Assembly/quicktiler/actions/workflows/security.yml/badge.svg?branch=main)](https://github.com/Ghost-Assembly/quicktiler/actions/workflows/security.yml)
+[![Docs](https://img.shields.io/website?url=https%3A%2F%2Fghost-assembly.com%2Fquicktiler%2F&label=docs)](https://ghost-assembly.com/quicktiler/)
+[![Release](https://img.shields.io/github/v/release/Ghost-Assembly/quicktiler)](https://github.com/Ghost-Assembly/quicktiler/releases/latest)
+[![License](https://img.shields.io/github/license/Ghost-Assembly/quicktiler)](https://github.com/Ghost-Assembly/quicktiler/blob/main/LICENSE)
+[![GNOME](https://img.shields.io/badge/GNOME-49%20%7C%2050-blue)](https://ghost-assembly.com/quicktiler/#install)
+[![Security issues](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fsonarcloud.io%2Fapi%2Fmeasures%2Fcomponent%3Fcomponent%3DGhost-Assembly_quicktiler%26metricKeys%3Dsoftware_quality_security_issues&query=%24.component.measures%5B0%5D.value&label=Security+issues)](https://sonarcloud.io/dashboard?id=Ghost-Assembly_quicktiler)
+[![Reliability issues](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fsonarcloud.io%2Fapi%2Fmeasures%2Fcomponent%3Fcomponent%3DGhost-Assembly_quicktiler%26metricKeys%3Dsoftware_quality_reliability_issues&query=%24.component.measures%5B0%5D.value&label=Reliability+issues)](https://sonarcloud.io/dashboard?id=Ghost-Assembly_quicktiler)
+[![Maintainability issues](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fsonarcloud.io%2Fapi%2Fmeasures%2Fcomponent%3Fcomponent%3DGhost-Assembly_quicktiler%26metricKeys%3Dsoftware_quality_maintainability_issues&query=%24.component.measures%5B0%5D.value&label=Maintainability+issues)](https://sonarcloud.io/dashboard?id=Ghost-Assembly_quicktiler)
+[![Duplication](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fsonarcloud.io%2Fapi%2Fmeasures%2Fcomponent%3Fcomponent%3DGhost-Assembly_quicktiler%26metricKeys%3Dduplicated_lines_density&query=%24.component.measures%5B0%5D.value&label=Duplication)](https://sonarcloud.io/dashboard?id=Ghost-Assembly_quicktiler)
+[![Coverage](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fsonarcloud.io%2Fapi%2Fmeasures%2Fcomponent%3Fcomponent%3DGhost-Assembly_quicktiler%26metricKeys%3Dcoverage&query=%24.component.measures%5B0%5D.value&label=Coverage)](https://sonarcloud.io/dashboard?id=Ghost-Assembly_quicktiler)
+[![Sonar policy](https://github.com/Ghost-Assembly/quicktiler/actions/workflows/sonar.yml/badge.svg?branch=main)](https://sonarcloud.io/dashboard?id=Ghost-Assembly_quicktiler)
+<!-- quick-template:badges:end -->
+
 Keyboard-driven zone tiling with a Quick Settings tile, no overlay and no timers.
 
 Press a direction repeatedly and the focused window cycles through the zones on
@@ -72,63 +88,119 @@ tile because it has to be — with the tile hidden, it is the only way back.
 
 ## Install
 
-Needs GNOME Shell 49 or 50. From the latest release, with no clone and no
-toolchain — `gnome-extensions` ships with GNOME Shell itself:
+<!-- quick-template:install:start -->
 
-```bash
-curl -LO https://github.com/Ghost-Assembly/quicktiler/releases/latest/download/quicktiler@napalm255.github.io.shell-extension.zip
+Requires GNOME Shell 49 or 50. Requires a GNOME desktop session; window behavior also depends on each application and its minimum size.
+
+### From a release
+
+Download the latest release ZIP and install it for your user. xh is a download tool; you can also download the ZIP from GitHub in a browser. Installing compiles the settings schema.
+
+```sh
+xh --download GET https://github.com/Ghost-Assembly/quicktiler/releases/latest/download/quicktiler@napalm255.github.io.shell-extension.zip
 gnome-extensions install --force quicktiler@napalm255.github.io.shell-extension.zip
 ```
 
-That unpacks the extension and compiles its settings schema, so there is no
-separate `glib-compile-schemas` step. Log out and back in — Wayland cannot
-reload the Shell in place — then turn it on:
+Log out and back in so GNOME discovers the extension, then enable it:
 
-```bash
+```sh
 gnome-extensions enable quicktiler@napalm255.github.io
 ```
 
-From a clone:
+### From a clone
 
-```bash
-just setup
-just install
-just enable
+Install mise and activate it in your shell. Clone the repository, install its pinned tools, and build and install the same ZIP used for releases:
+
+```sh
+git clone https://github.com/Ghost-Assembly/quicktiler.git
+cd quicktiler
+mise install
+mise exec -- just setup
+mise exec -- just install
 ```
 
-Log out and back in if the Shell does not pick it up. `just prefs` opens the
-preferences window, `just logs` follows the extension's output, and
-`just disable` turns it off again without uninstalling.
+Log out and back in, then run just enable. Run just prefs to open preferences. After updating a loaded extension, start a new session to load its new code; opening preferences does not reload GNOME Shell.
+<!-- quick-template:install:end -->
 
-## Development
+## Uninstall
 
-```bash
-just            # list every recipe
-just test       # unit suite, runs on Node in about a fifth of a second
-just test-docs  # the docs site in Chromium and Firefox
-just lint       # eslint, prettier, gschema and shellcheck
-just ci         # everything CI runs
-just test-live  # headless Shell smoke test, then the packer check
-just docs       # serve the documentation site locally
+<!-- quick-template:uninstall:start -->
+
+Disable and uninstall the extension for your user. These commands preserve saved settings and other user data.
+
+```sh
+gnome-extensions disable quicktiler@napalm255.github.io
+gnome-extensions uninstall quicktiler@napalm255.github.io
 ```
 
-`extension.js` is the entry point: it is deliberately thin, owning a settings
-object, a `QuickTiler` and a `Panel`, and pairing each construction with its
-teardown. `modules/zones.js`, `windows.js`, `neighbors.js`, `actions.js`,
-`shortcuts.js`, `accelerator.js` and `settings.js` import nothing at all, so
-Vitest runs them on plain Node. `modules/quicktiler.js` is the only file that
-touches Meta or Shell, and `modules/panel.js` the only one that touches St,
-Clutter, PopupMenu or QuickSettings; both are unit-tested through stubs aliased
-in `vitest.config.js`. The
-[architecture](https://ghost-assembly.com/quicktiler/#architecture) and
-[testing](https://ghost-assembly.com/quicktiler/#testing) sections of the
-documentation go into why.
+From a clone, just uninstall performs the same steps. Disabling with just disable leaves the extension installed.
+<!-- quick-template:uninstall:end -->
+
+## Testing
+
+<!-- quick-template:testing:start -->
+
+just test runs the JavaScript suite with Vitest, the shared tooling tests, and any project-specific offline suites. just coverage reports the JavaScript coverage universe, including untested runtime files. Test stubs and generated reports are not runtime source.
+
+just test-docs runs Playwright and axe in Chromium and Firefox: dark and light accessibility checks, keyboard navigation, mobile layout, reduced motion, links, metadata, local assets, and no page JavaScript. Automated accessibility checks still require human review of reading and focus order.
+
+just test-live checks the package and runs isolated GNOME lifecycle checks. It is a separate local check, not proof of compatibility from a hosted runner. Verify each declared GNOME version and complete the project's manual checks before releasing.
+<!-- quick-template:testing:end -->
+
+### Project checks
+
+Recording Mutter stubs model maximized windows, deferred Wayland frame changes, client minimum sizes, and signal lifetimes. The isolated Shell check verifies enable/disable/re-enable and lifetime cleanup. Verify tiling geometry, monitors, minimum sizes, and shortcuts with real applications before release.
+
+## Packaging
+
+<!-- quick-template:packaging:start -->
+
+```sh
+just build
+just pack-check
+```
+
+The output is quicktiler@napalm255.github.io.shell-extension.zip at the repository root, with metadata.json at the archive root. Python's standard library packages the explicit runtimeFiles allowlist in quick-project.json, using stable file order and timestamps.
+
+just pack-check compares both filenames and file contents with GNOME's official packer and validates shipped icons. Docs, tests, dependencies, credentials, downloaded binaries, and development artifacts stay outside the ZIP. Update the runtime allowlist when adding a runtime file.
+<!-- quick-template:packaging:end -->
 
 ## Releasing
 
-Set the version in `metadata.json` and `package.json`, commit, then tag and
-push. CI checks the tag against both files before it builds anything. See
-[releasing](https://ghost-assembly.com/quicktiler/#releasing).
+<!-- quick-template:releasing:start -->
+
+Run just ci, just test-live, and the project manual checklist. Set metadata.json version-name and package.json version to the same new version. The GNOME Extensions website assigns the numeric metadata.json version during submission. Update the npm lockfile, regenerate the docs, and commit the reviewed changes to main through a passing pull request.
+
+Create and push a v-prefixed tag for that version. The release workflow verifies the version, main ancestry, and successful required checks for the tagged commit, then attaches its tested ZIP to a GitHub release. It does not upload to extensions.gnome.org; that submission and its review remain manual.
+<!-- quick-template:releasing:end -->
+
+## Development
+
+<!-- quick-template:development:start -->
+
+mise.toml pins runtime and CLI versions; justfile owns commands; npm owns development dependencies and the lockfile. GNOME libraries come from the host. On image-based Fedora, use the host's available tools or a toolbox/distrobox for missing system packages; do not layer packages onto the OS.
+
+```sh
+just setup        # install pinned tools, dependencies, and browsers
+just fmt          # format source and configuration
+just lint         # verify template, generated docs, source, and schemas
+just test         # JavaScript, Python, and project offline tests
+just coverage     # report JavaScript coverage without source exclusions
+just test-docs    # Chromium and Firefox documentation checks
+just security     # dependencies, secrets, and workflow checks
+just build        # build the runtime-only extension ZIP
+just pack-check   # compare files and contents with GNOME's packer
+just ci           # complete local verification and packaging
+just test-live    # isolated GNOME lifecycle and project integration checks
+just docs         # serve the static site at localhost:8000
+just template-check  # verify the pinned canonical template
+just template-status # report a newer approved template revision
+```
+
+GitHub requires local verification, security analysis, and completed Sonar analysis. The shared Sonar policy requires zero security, reliability, and maintainability issues and zero duplicated lines. Missing configuration fails instead of silently skipping analysis. Pages publishes the tested docs only after the required checks pass on main.
+
+Common tooling and these instructions are generated from a pinned canonical template. Change that source and synchronize its approved revision; do not edit generated sections or locally bless drift. Extension-specific behavior belongs in project configuration and project.just.
+<!-- quick-template:development:end -->
 
 ## License
 
