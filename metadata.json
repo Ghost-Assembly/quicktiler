@@ -6,5 +6,5 @@
   "url": "https://github.com/Ghost-Assembly/quicktiler",
   "settings-schema": "org.gnome.shell.extensions.quicktiler",
   "gettext-domain": "quicktiler",
-  "version-name": "0.3.0"
+  "version-name": "0.3.1"
 }
