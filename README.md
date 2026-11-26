@@ -7,7 +7,7 @@
 [![Docs](https://img.shields.io/website?url=https%3A%2F%2Fghost-assembly.com%2Fquicktiler%2F&label=docs)](https://ghost-assembly.com/quicktiler/)
 [![Release](https://img.shields.io/github/v/release/Ghost-Assembly/quicktiler)](https://github.com/Ghost-Assembly/quicktiler/releases/latest)
 [![License](https://img.shields.io/github/license/Ghost-Assembly/quicktiler)](https://github.com/Ghost-Assembly/quicktiler/blob/main/LICENSE)
-[![GNOME](https://img.shields.io/badge/GNOME-49%20%7C%2050-blue)](https://ghost-assembly.com/quicktiler/#install)
+[![GNOME](https://img.shields.io/badge/GNOME-50%20%7C%2051-blue)](https://ghost-assembly.com/quicktiler/#install)
 [![Security issues](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fsonarcloud.io%2Fapi%2Fmeasures%2Fcomponent%3Fcomponent%3DGhost-Assembly_quicktiler%26metricKeys%3Dsoftware_quality_security_issues&query=%24.component.measures%5B0%5D.value&label=Security+issues)](https://sonarcloud.io/dashboard?id=Ghost-Assembly_quicktiler)
 [![Reliability issues](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fsonarcloud.io%2Fapi%2Fmeasures%2Fcomponent%3Fcomponent%3DGhost-Assembly_quicktiler%26metricKeys%3Dsoftware_quality_reliability_issues&query=%24.component.measures%5B0%5D.value&label=Reliability+issues)](https://sonarcloud.io/dashboard?id=Ghost-Assembly_quicktiler)
 [![Maintainability issues](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fsonarcloud.io%2Fapi%2Fmeasures%2Fcomponent%3Fcomponent%3DGhost-Assembly_quicktiler%26metricKeys%3Dsoftware_quality_maintainability_issues&query=%24.component.measures%5B0%5D.value&label=Maintainability+issues)](https://sonarcloud.io/dashboard?id=Ghost-Assembly_quicktiler)
@@ -90,7 +90,7 @@ tile because it has to be — with the tile hidden, it is the only way back.
 
 <!-- quick-template:install:start -->
 
-Requires GNOME Shell 49 or 50. Requires a GNOME desktop session; window behavior also depends on each application and its minimum size.
+Requires GNOME Shell 50 or 51. Requires a GNOME desktop session; window behavior also depends on each application and its minimum size.
 
 ### From a release
 
